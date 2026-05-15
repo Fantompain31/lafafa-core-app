@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import './join.css'
 
-type Step = 'loading' | 'unauthenticated' | 'ready' | 'accepting' | 'success' | 'error'
+type Step = 'loading' | 'unauthenticated' | 'ready' | 'accepting' | 'error'
 
 export default function JoinPageClient() {
   const searchParams = useSearchParams()
@@ -13,8 +13,7 @@ export default function JoinPageClient() {
   const token = searchParams.get('token')
 
   const [step, setStep] = useState<Step>('loading')
-  const [stayId, setStayId] = useState<string | null>(null)
-  const [errorMsg, setErrorMsg] = useState<string>('')
+  const [errorMsg, setErrorMsg] = useState('')
 
   useEffect(() => {
     if (!token) {
@@ -28,11 +27,7 @@ export default function JoinPageClient() {
   async function checkAuth() {
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
-    if (user) {
-      setStep('ready')
-    } else {
-      setStep('unauthenticated')
-    }
+    setStep(user ? 'ready' : 'unauthenticated')
   }
 
   async function handleAccept() {
@@ -48,12 +43,10 @@ export default function JoinPageClient() {
       return
     }
 
-    setStayId(data.stay_id)
-    setStep('success')
-
-    setTimeout(() => {
-      router.push(`/stays/${data.stay_id}`)
-    }, 2000)
+    // Redirige vers la page de complétion de fiche
+    const params = new URLSearchParams({ stayId: data.stay_id })
+    if (data.guest_id) params.set('guestId', data.guest_id)
+    router.push(`/join/complete?${params.toString()}`)
   }
 
   function handleLogin() {
@@ -85,12 +78,8 @@ export default function JoinPageClient() {
               Connectez-vous ou créez un compte pour rejoindre le séjour.
             </p>
             <div className="join-actions">
-              <button className="btn-primary" onClick={handleLogin}>
-                Se connecter
-              </button>
-              <button className="btn-secondary" onClick={handleRegister}>
-                Créer un compte
-              </button>
+              <button className="btn-primary" onClick={handleLogin}>Se connecter</button>
+              <button className="btn-secondary" onClick={handleRegister}>Créer un compte</button>
             </div>
           </div>
         )}
@@ -103,9 +92,7 @@ export default function JoinPageClient() {
               Cliquez ci-dessous pour rejoindre le séjour.
             </p>
             <div className="join-actions">
-              <button className="btn-primary" onClick={handleAccept}>
-                Rejoindre le séjour
-              </button>
+              <button className="btn-primary" onClick={handleAccept}>Rejoindre le séjour</button>
             </div>
           </div>
         )}
@@ -117,16 +104,6 @@ export default function JoinPageClient() {
           </div>
         )}
 
-        {step === 'success' && (
-          <div className="join-state">
-            <div className="join-icon">✅</div>
-            <h1 className="join-title">Bienvenue !</h1>
-            <p className="join-subtitle">
-              Vous avez rejoint le séjour. Redirection en cours…
-            </p>
-          </div>
-        )}
-
         {step === 'error' && (
           <div className="join-state">
             <div className="join-icon">😕</div>
@@ -134,7 +111,7 @@ export default function JoinPageClient() {
             <p className="join-subtitle">{errorMsg}</p>
             <div className="join-actions">
               <button className="btn-secondary" onClick={() => router.push('/')}>
-                Retour à l'accueil
+                Retour à l&apos;accueil
               </button>
             </div>
           </div>

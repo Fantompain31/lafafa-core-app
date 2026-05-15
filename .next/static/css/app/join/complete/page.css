@@ -1,0 +1,179 @@
+/*!*******************************************************************************************************************************************************************************************************************************************************************!*\
+  !*** css ./node_modules/next/dist/build/webpack/loaders/css-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[2]!./node_modules/next/dist/build/webpack/loaders/postcss-loader/src/index.js??ruleSet[1].rules[14].oneOf[12].use[3]!./src/app/join/join.css ***!
+  \*******************************************************************************************************************************************************************************************************************************************************************/
+/* ─── Page /join ─── */
+
+.join-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: var(--surface-warm, #f5f0e8);
+  padding: 1.5rem;
+}
+
+.join-card {
+  background: #ffffff;
+  border-radius: 1.5rem;
+  padding: 2.5rem 2rem;
+  max-width: 420px;
+  width: 100%;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.06),
+    0 0 0 1px rgba(196, 168, 130, 0.15);
+  animation: card-in 0.35s ease both;
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.join-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+}
+
+.join-icon {
+  font-size: 3rem;
+  line-height: 1;
+  margin-bottom: 0.25rem;
+  animation: pop-in 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: scale(0.6); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.join-title {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2c2420;
+  margin: 0;
+  letter-spacing: -0.02em;
+}
+
+.join-subtitle {
+  font-size: 0.95rem;
+  color: #7a6a5a;
+  margin: 0;
+  line-height: 1.6;
+  max-width: 300px;
+}
+
+.join-hint {
+  font-size: 0.9rem;
+  color: #a08870;
+  margin: 0.5rem 0 0;
+}
+
+/* ─── Actions ─── */
+
+.join-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
+.btn-primary {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  background-color: var(--stay-primary, #C4A882);
+  color: var(--stay-primary-text, #fff);
+  border: none;
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.15s, transform 0.1s;
+}
+
+.btn-primary:hover {
+  background-color: #b5966e;
+  transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  transform: translateY(0);
+}
+
+.btn-secondary {
+  width: 100%;
+  padding: 0.8rem 1.5rem;
+  background-color: transparent;
+  color: #7a6a5a;
+  border: 1.5px solid rgba(196, 168, 130, 0.4);
+  border-radius: 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+
+.btn-secondary:hover {
+  border-color: #C4A882;
+  color: #2c2420;
+  transform: translateY(-1px);
+}
+
+/* ─── Spinner ─── */
+
+.join-spinner {
+  width: 2.5rem;
+  height: 2.5rem;
+  border: 3px solid rgba(196, 168, 130, 0.2);
+  border-top-color: #C4A882;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0.5rem auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ─── Skeleton ─── */
+
+.skeleton-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, #f0ebe3 25%, #e8e0d4 50%, #f0ebe3 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.4s infinite;
+  border-radius: 0.5rem;
+}
+
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+
+.skeleton-icon  { width: 3rem; height: 3rem; border-radius: 50%; }
+.skeleton-title { width: 180px; height: 1.5rem; }
+.skeleton-text  { width: 260px; height: 1rem; }
+.skeleton-btn   { width: 100%; height: 2.75rem; border-radius: 0.75rem; }
+
+/* ─── Responsive ─── */
+
+@media (max-width: 480px) {
+  .join-card {
+    padding: 2rem 1.5rem;
+    border-radius: 1.25rem;
+  }
+
+  .join-title {
+    font-size: 1.3rem;
+  }
+}
+

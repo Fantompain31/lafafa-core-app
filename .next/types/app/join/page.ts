@@ -1,8 +1,8 @@
-// File: C:\Users\chloe\OneDrive\Documents\App la fafa\lafafa_core_app\src\app\stays\[stayId]\settings\page.tsx
-import * as entry from '../../../../../../src/app/stays/[stayId]/settings/page.js'
+// File: C:\Users\chloe\OneDrive\Documents\App la fafa\lafafa_core_app\src\app\join\page.tsx
+import * as entry from '../../../../src/app/join/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 
-type TEntry = typeof import('../../../../../../src/app/stays/[stayId]/settings/page.js')
+type TEntry = typeof import('../../../../src/app/join/page.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

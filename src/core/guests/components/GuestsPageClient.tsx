@@ -22,7 +22,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
   const [selectedGuest, setSelectedGuest] = useState<GuestSummary | null>(null)
   const [filter, setFilter] = useState('all')
   const [showInviteModal, setShowInviteModal] = useState(false)
-  const [selectedGuestId, setSelectedGuestId] = useState<string | undefined>(undefined)
+  const [inviteGuestId, setInviteGuestId] = useState<string | undefined>(undefined)
 
   const isOrganizer = permissions.canManageGuests(myRole)
 
@@ -34,6 +34,18 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
     setView('list')
     setSelectedGuest(null)
     void reload()
+  }
+
+  // Invitation liée à une fiche spécifique
+  function handleInviteGuest(guest: GuestSummary) {
+    setInviteGuestId(guest.id)
+    setShowInviteModal(true)
+  }
+
+  // Invitation générale sans fiche
+  function handleInviteGeneral() {
+    setInviteGuestId(undefined)
+    setShowInviteModal(true)
   }
 
   const filteredGuests = guests.filter(g => {
@@ -92,7 +104,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
               + Ajouter
             </button>
             <button
-              onClick={() => { setSelectedGuestId(undefined); setShowInviteModal(true) }}
+              onClick={handleInviteGeneral}
               className="rounded-lg bg-[var(--stay-primary)] px-3 py-2 text-sm font-medium text-[var(--stay-primary-text)] hover:opacity-90"
             >
               Inviter
@@ -134,6 +146,8 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
             <GuestCard
               key={guest.id}
               guest={guest}
+              isOrganizer={isOrganizer}
+              onInvite={handleInviteGuest}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />
           ))}
@@ -144,7 +158,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
       {showInviteModal && (
         <InviteGuestModal
           stayId={stayId}
-          guestId={selectedGuestId}
+          guestId={inviteGuestId}
           onClose={() => setShowInviteModal(false)}
         />
       )}
