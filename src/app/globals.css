@@ -1,0 +1,18 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --surface-warm: #fbf8f3;
+  --stay-primary: #c4a882;
+  --stay-primary-text: #ffffff;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; color: #171717; background: var(--surface-warm); }
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-neutral-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[var(--stay-primary)] focus:border-transparent;
+  }
+}

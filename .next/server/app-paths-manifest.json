@@ -1,0 +1,5 @@
+{
+  "/stays/[stayId]/page": "app/stays/[stayId]/page.js",
+  "/stays/[stayId]/guests/page": "app/stays/[stayId]/guests/page.js",
+  "/stays/[stayId]/settings/page": "app/stays/[stayId]/settings/page.js"
+}
