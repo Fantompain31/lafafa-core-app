@@ -21,7 +21,11 @@ export default function InviteGuestModal({ stayId, guestId, onClose }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [emailSent, setEmailSent] = useState(false)
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? window.location.origin
+  const appUrl = (
+  process.env.NEXT_PUBLIC_APP_URL ||
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  window.location.origin
+).replace(/\/$/, '')
 
   async function handleSendEmail() {
     if (!email.trim()) return
