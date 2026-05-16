@@ -14,6 +14,7 @@ type GuestPayload = {
   departureAt?: string | null
   foodPreferences?: FoodPreferences
   notes?: string | null
+  linkedUserId?: string | null
 }
 
 function normalizeGuestPayload(payload: GuestPayload) {
@@ -74,6 +75,7 @@ export const guestsService = {
         departure_at: normalized.departure_at ?? null,
         food_preferences: normalized.food_preferences ?? {},
         notes: normalized.notes ?? null,
+        linked_user_id: payload.linkedUserId ?? null,
       })
       .select('id')
       .single()

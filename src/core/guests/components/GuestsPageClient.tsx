@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { GuestSummary, MemberRole } from '@/shared/types/database.types'
 import { permissions } from '@/core/permissions/permissions'
 import { guestsService } from '@/core/guests/services/guests.service'
+import { createClient } from '@/lib/supabase/client'
 import { GuestCard } from './GuestCard'
 import { GuestForm } from './GuestForm'
 import InviteGuestModal from './InviteGuestModal'
@@ -23,6 +24,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
   const [filter, setFilter] = useState('all')
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteGuestId, setInviteGuestId] = useState<string | undefined>(undefined)
+  const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null)
 
   const isOrganizer = permissions.canManageGuests(myRole)
 
@@ -36,16 +38,46 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
     void reload()
   }
 
-  // Invitation liée à une fiche spécifique
   function handleInviteGuest(guest: GuestSummary) {
     setInviteGuestId(guest.id)
     setShowInviteModal(true)
   }
 
-  // Invitation générale sans fiche
   function handleInviteGeneral() {
     setInviteGuestId(undefined)
     setShowInviteModal(true)
+  }
+
+  async function handleCopyLink(guest: GuestSummary) {
+    const supabase = createClient()
+    const { data: token, error } = await supabase.rpc('create_guest_access_link', {
+      p_stay_id: stayId,
+      p_label: 'Lien partageable',
+      p_guest_id: guest.id,
+      p_expires_in_days: null,
+    })
+
+    if (error || !token) return
+
+    const url = `${window.location.origin}/join?token=${token}`
+    await navigator.clipboard.writeText(url)
+    setCopiedGuestId(guest.id)
+    setTimeout(() => setCopiedGuestId(null), 2000)
+    void reload()
+  }
+
+  async function handleRevoke(guest: GuestSummary) {
+    if (!confirm(`Révoquer l'invitation de ${guest.first_name} ?`)) return
+    const supabase = createClient()
+
+    if (guest.active_link_id) {
+      await supabase.rpc('revoke_guest_access_link', { p_link_id: guest.active_link_id })
+    }
+    if (guest.active_invitation_id) {
+      await supabase.rpc('revoke_stay_invitation', { p_invitation_id: guest.active_invitation_id })
+    }
+
+    void reload()
   }
 
   const filteredGuests = guests.filter(g => {
@@ -148,9 +180,18 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
               guest={guest}
               isOrganizer={isOrganizer}
               onInvite={handleInviteGuest}
+              onCopyLink={handleCopyLink}
+              onRevoke={handleRevoke}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />
           ))}
+        </div>
+      )}
+
+      {/* Feedback copie */}
+      {copiedGuestId && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 rounded-lg bg-neutral-900 px-4 py-2 text-sm text-white shadow-lg">
+          Lien copié !
         </div>
       )}
 
@@ -159,7 +200,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
         <InviteGuestModal
           stayId={stayId}
           guestId={inviteGuestId}
-          onClose={() => setShowInviteModal(false)}
+          onClose={() => { setShowInviteModal(false); void reload() }}
         />
       )}
 

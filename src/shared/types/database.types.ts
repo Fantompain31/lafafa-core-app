@@ -58,6 +58,10 @@ export type GuestSummary = {
   linked_user_avatar_url: string | null
   linked_user_first_name: string | null
   linked_user_last_name: string | null
+  active_invitation_id: string | null
+  invitation_status: string | null
+  active_link_id: string | null
+  link_is_active: boolean | null
 }
 
 export type StaySettings = {

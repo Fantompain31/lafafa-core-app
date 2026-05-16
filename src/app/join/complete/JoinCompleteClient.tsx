@@ -18,6 +18,7 @@ export default function JoinCompleteClient() {
 
   const [step, setStep] = useState<Step>('loading')
   const [guest, setGuest] = useState<GuestSummary | null>(null)
+  const [userId, setUserId] = useState<string | null>(null)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -36,6 +37,8 @@ export default function JoinCompleteClient() {
       router.push('/auth/login')
       return
     }
+
+    setUserId(user.id)
 
     if (guestId) {
       try {
@@ -99,6 +102,7 @@ export default function JoinCompleteClient() {
               </p>
               <GuestForm
                 stayId={stayId!}
+                linkedUserId={userId ?? undefined}
                 onSuccess={handleDone}
                 onCancel={handleSkip}
               />

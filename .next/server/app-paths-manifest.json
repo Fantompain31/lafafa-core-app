@@ -1,8 +1,0 @@
-{
-  "/join/page": "app/join/page.js",
-  "/auth/login/page": "app/auth/login/page.js",
-  "/dashboard/page": "app/dashboard/page.js",
-  "/join/complete/page": "app/join/complete/page.js",
-  "/stays/[stayId]/guests/page": "app/stays/[stayId]/guests/page.js",
-  "/stays/[stayId]/page": "app/stays/[stayId]/page.js"
-}

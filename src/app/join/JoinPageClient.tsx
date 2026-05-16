@@ -43,18 +43,24 @@ export default function JoinPageClient() {
       return
     }
 
-    // Redirige vers la page de complétion de fiche
+    // Nettoyer le token en attente si présent
+    localStorage.removeItem('pending_invite_token')
+
     const params = new URLSearchParams({ stayId: data.stay_id })
     if (data.guest_id) params.set('guestId', data.guest_id)
     router.push(`/join/complete?${params.toString()}`)
   }
 
   function handleLogin() {
+    // Stocker le token pour le récupérer après connexion
+    if (token) localStorage.setItem('pending_invite_token', token)
     const redirectTo = encodeURIComponent(`/join?token=${token}`)
     router.push(`/auth/login?redirectTo=${redirectTo}`)
   }
 
   function handleRegister() {
+    // Stocker le token pour le récupérer après inscription + confirmation email
+    if (token) localStorage.setItem('pending_invite_token', token)
     const redirectTo = encodeURIComponent(`/join?token=${token}`)
     router.push(`/auth/register?redirectTo=${redirectTo}`)
   }

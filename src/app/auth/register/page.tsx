@@ -1,13 +1,15 @@
 'use client'
 
 import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { authService } from '@/core/auth/auth.service'
 import type { RegisterFormValues } from '@/core/auth/auth.types'
 
 export default function RegisterPage() {
-  const router = useRouter()
+  const searchParams = useSearchParams()
+  const redirectTo = searchParams.get('redirectTo') ?? '/dashboard'
+
   const [values, setValues] = useState<RegisterFormValues>({
     firstName: '',
     lastName:  '',
@@ -33,6 +35,7 @@ export default function RegisterPage() {
         values.password,
         values.firstName,
         values.lastName,
+        redirectTo !== '/dashboard' ? redirectTo : undefined,
       )
       setSuccess(true)
     } catch (err: unknown) {
@@ -57,8 +60,13 @@ export default function RegisterPage() {
               Un lien de confirmation a été envoyé à <strong>{values.email}</strong>.
               Cliquez sur le lien pour activer votre compte.
             </p>
+            {redirectTo !== '/dashboard' && (
+              <p className="mt-3 text-xs text-neutral-400">
+                Après confirmation, vous serez redirigé automatiquement vers votre invitation.
+              </p>
+            )}
             <Link
-              href="/auth/login"
+              href={`/auth/login${redirectTo !== '/dashboard' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
               className="mt-6 block text-sm text-[var(--stay-primary)] font-medium hover:underline"
             >
               Retour à la connexion
@@ -153,7 +161,10 @@ export default function RegisterPage() {
 
         <p className="text-center text-sm text-neutral-500 mt-4">
           Déjà un compte ?{' '}
-          <Link href="/auth/login" className="text-[var(--stay-primary)] font-medium hover:underline">
+          <Link
+            href={`/auth/login${redirectTo !== '/dashboard' ? `?redirectTo=${encodeURIComponent(redirectTo)}` : ''}`}
+            className="text-[var(--stay-primary)] font-medium hover:underline"
+          >
             Se connecter
           </Link>
         </p>

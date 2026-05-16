@@ -17,14 +17,23 @@ export default async function SettingsPage({ params }: Props) {
   if (stayError || !stay) notFound()
 
   const typedStay = stay as MyStay
-  if (!['owner', 'co_organizer'].includes(typedStay.my_role)) redirect(`/stays/${params.stayId}`)
+
+  // Les invités et viewers peuvent voir les paramètres en lecture seule
+  // Seuls les non-membres sont redirigés
+  if (!typedStay.my_role) redirect(`/stays/${params.stayId}`)
 
   const { data: settings } = await supabase.from('stay_settings').select('*').eq('stay_id', params.stayId).single()
   const { data: features } = await supabase.from('stay_enabled_features').select('*').eq('stay_id', params.stayId).order('feature_key')
 
   return (
     <StayLayout stay={typedStay}>
-      <SettingsPageClient stay={typedStay} settings={settings as StaySettings | null} features={(features ?? []) as StayEnabledFeature[]} isOwner={typedStay.my_role === 'owner'} />
+      <SettingsPageClient
+        stay={typedStay}
+        settings={settings as StaySettings | null}
+        features={(features ?? []) as StayEnabledFeature[]}
+        isOwner={typedStay.my_role === 'owner'}
+        myRole={typedStay.my_role}
+      />
     </StayLayout>
   )
 }

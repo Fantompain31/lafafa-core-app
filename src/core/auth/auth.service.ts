@@ -9,11 +9,22 @@ export const authService = {
     if (error) throw new Error(error.message)
   },
 
-  async signUpWithEmail(email: string, password: string, firstName: string, lastName: string) {
+  async signUpWithEmail(
+    email: string,
+    password: string,
+    firstName: string,
+    lastName: string,
+    redirectTo?: string,
+  ) {
     const supabase = createClient()
     const cleanEmail = requireNonEmpty(email, 'Email').toLowerCase()
     const cleanFirstName = requireNonEmpty(firstName, 'Prénom')
     const cleanLastName = requireNonEmpty(lastName, 'Nom')
+
+    // Si redirectTo fourni, on le passe dans le callback pour revenir au lien d'invitation
+    const callbackUrl = redirectTo
+      ? `${window.location.origin}/auth/callback?next=${encodeURIComponent(redirectTo)}`
+      : `${window.location.origin}/auth/callback`
 
     const { error } = await supabase.auth.signUp({
       email: cleanEmail,
@@ -23,7 +34,7 @@ export const authService = {
           first_name: cleanFirstName,
           last_name: cleanLastName,
         },
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
+        emailRedirectTo: callbackUrl,
       },
     })
     if (error) throw new Error(error.message)

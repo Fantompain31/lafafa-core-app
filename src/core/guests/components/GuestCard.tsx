@@ -6,12 +6,15 @@ type Props = {
   guest: GuestSummary
   onClick?: () => void
   onInvite?: (guest: GuestSummary) => void
+  onCopyLink?: (guest: GuestSummary) => void
+  onRevoke?: (guest: GuestSummary) => void
   isOrganizer?: boolean
 }
 
-export function GuestCard({ guest, onClick, onInvite, isOrganizer }: Props) {
+export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, isOrganizer }: Props) {
   const initials = [guest.first_name[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase()
   const isLinked = guest.linked_user_id !== null
+  const hasActiveInvitation = guest.active_invitation_id !== null || guest.active_link_id !== null
 
   const content = (
     <>
@@ -35,9 +38,10 @@ export function GuestCard({ guest, onClick, onInvite, isOrganizer }: Props) {
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <GuestCategoryBadge category={guest.category} />
               <GuestStatusBadge status={guest.status} />
-              {isLinked && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                  ✓ Compte lié
+              {/* Badge lien envoyé */}
+              {!isLinked && hasActiveInvitation && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                  ✉ Lien envoyé
                 </span>
               )}
             </div>
@@ -54,6 +58,39 @@ export function GuestCard({ guest, onClick, onInvite, isOrganizer }: Props) {
             </button>
           )}
         </div>
+
+        {/* Boutons Copier / Révoquer — si invitation active */}
+        {isOrganizer && !isLinked && hasActiveInvitation && (
+          <div
+            className="mt-3 flex gap-2 border-t border-neutral-100 pt-3"
+            onClick={e => e.stopPropagation()}
+          >
+            {onCopyLink && (
+              <button
+                type="button"
+                onClick={() => onCopyLink(guest)}
+                className="flex items-center gap-1.5 rounded-lg border border-neutral-200 bg-neutral-50 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-100 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+                </svg>
+                Copier le lien
+              </button>
+            )}
+            {onRevoke && (
+              <button
+                type="button"
+                onClick={() => onRevoke(guest)}
+                className="flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 transition-colors"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+                </svg>
+                Révoquer
+              </button>
+            )}
+          </div>
+        )}
 
         {(guest.arrival_at || guest.departure_at) && (
           <div className="mt-3 space-y-1 text-xs text-neutral-500">
