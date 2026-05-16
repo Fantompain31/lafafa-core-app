@@ -350,3 +350,12 @@
   .app-content { padding: 1rem; padding-bottom: 80px; }
   .app-topbar { display: none; }
 }
+
+.sidebar-account-link {
+  margin-bottom: 4px;
+}
+
+.sidebar.collapsed .sidebar-account-link .nav-label {
+  opacity: 0;
+  width: 0;
+}

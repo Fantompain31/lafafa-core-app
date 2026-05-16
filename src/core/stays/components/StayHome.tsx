@@ -1,8 +1,46 @@
 'use client'
 
+import { useMemo } from 'react'
 import { useRouter } from 'next/navigation'
 import type { MyStay, GuestSummary, MemberRole } from '@/shared/types/database.types'
 import './StayHome.css'
+
+export type StayHomeEvent = {
+  id: string
+  title: string
+  event_type: string
+  event_date: string
+  start_time: string | null
+  end_time: string | null
+  location: string | null
+  status: string | null
+  source_type?: string | null
+  source_id?: string | null
+  logistics_section_id?: string | null
+}
+
+export type StayHomeLogisticsSection = {
+  id: string
+  title: string
+  section_type: string
+  source_type: string | null
+  source_id: string | null
+  is_hidden: boolean
+  created_at?: string | null
+}
+
+export type StayHomeLogisticsItem = {
+  id: string
+  section_id: string
+  is_checked: boolean
+  assigned_guest_id: string | null
+}
+
+type FoodAlert = {
+  guestId: string
+  name: string
+  label: string
+}
 
 type Props = {
   stay: MyStay
@@ -10,9 +48,75 @@ type Props = {
   myGuest: GuestSummary | null
   participants: GuestSummary[]
   myRole: MemberRole
+  programEvents?: StayHomeEvent[]
+  logisticsSections?: StayHomeLogisticsSection[]
+  logisticsItems?: StayHomeLogisticsItem[]
 }
 
-export function StayHome({ stay, score, myGuest, participants, myRole }: Props) {
+const EVENT_LABELS: Record<string, string> = {
+  repas: 'Repas',
+  apero: 'Apéro',
+  activite: 'Activité',
+  transport: 'Transport',
+  arrivee: 'Arrivée',
+  depart: 'Départ',
+  menage: 'Ménage',
+  temps_libre: 'Temps libre',
+  autre: 'Autre',
+}
+
+const EVENT_ICONS: Record<string, string> = {
+  repas: '🍽️',
+  apero: '🥂',
+  activite: '🎯',
+  transport: '🚗',
+  arrivee: '👋',
+  depart: '👜',
+  menage: '🧹',
+  temps_libre: '☀️',
+  autre: '📌',
+}
+
+const LOGISTICS_LABELS: Record<string, string> = {
+  repas: 'Repas',
+  meal: 'Repas',
+  apero: 'Apéro',
+  aperitif: 'Apéro',
+  shopping: 'Courses',
+  equipment: 'Matériel',
+  sleeping: 'Couchage',
+  transport: 'Transport',
+  menage: 'Ménage',
+  cleaning: 'Ménage',
+  activite: 'Activité',
+  autre: 'Autre',
+}
+
+const LOGISTICS_ICONS: Record<string, string> = {
+  repas: '🍽️',
+  meal: '🍽️',
+  apero: '🥂',
+  aperitif: '🥂',
+  shopping: '🛒',
+  equipment: '🎒',
+  sleeping: '🛏️',
+  transport: '🚗',
+  menage: '🧹',
+  cleaning: '🧹',
+  activite: '🎯',
+  autre: '📌',
+}
+
+export function StayHome({
+  stay,
+  score,
+  myGuest,
+  participants,
+  myRole,
+  programEvents = [],
+  logisticsSections = [],
+  logisticsItems = [],
+}: Props) {
   const router = useRouter()
   const isOrganizer = myRole === 'owner' || myRole === 'co_organizer'
   const safeScore = Math.max(0, Math.min(100, Math.round(score)))
@@ -26,6 +130,24 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
     ? Math.max(0, Math.ceil((startDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)))
     : null
 
+  const foodAlerts = useMemo(() => getFoodAlerts(participants), [participants])
+  const logisticsRows = useMemo(() => {
+    return logisticsSections.map(section => {
+      const items = logisticsItems.filter(item => item.section_id === section.id)
+      const remaining = items.filter(item => !item.is_checked).length
+      const unassigned = items.filter(item => !item.is_checked && !item.assigned_guest_id).length
+      const done = items.length - remaining
+      const progress = items.length > 0 ? Math.round((done / items.length) * 100) : 0
+      return { section, total: items.length, remaining, unassigned, progress }
+    })
+      .sort((a, b) => b.remaining - a.remaining || b.unassigned - a.unassigned)
+      .slice(0, 3)
+  }, [logisticsItems, logisticsSections])
+
+  const totalLogisticsItems = logisticsItems.length
+  const remainingLogisticsItems = logisticsItems.filter(item => !item.is_checked).length
+  const unassignedLogisticsItems = logisticsItems.filter(item => !item.is_checked && !item.assigned_guest_id).length
+
   const fmt = (d: Date) => d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'long' })
   const fmtDay = (d: Date) => d.toLocaleDateString('fr-FR', { weekday: 'long' })
 
@@ -35,8 +157,6 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
 
   return (
     <div className="sh">
-
-      {/* HERO */}
       <div className="sh-hero">
         <div className="sh-hero-cover" />
         <div className="sh-hero-body">
@@ -82,7 +202,6 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
         </div>
       </div>
 
-      {/* Score préparation — organisateurs uniquement */}
       {isOrganizer && (
         <div className="sh-score">
           <div className="sh-score-row">
@@ -96,11 +215,7 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
       )}
 
       <div className="sh-grid">
-
-        {/* Colonne principale */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-
-          {/* MA FICHE */}
+        <div className="sh-main-stack">
           <div className="sh-card">
             <div className="sh-card-header">
               <div className="sh-card-title-row">
@@ -124,10 +239,7 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
               </div>
               <button
                 className="sh-btn-outline"
-                onClick={() => myGuest
-                  ? router.push(`/stays/${stay.id}/guests`)
-                  : router.push(`/join/complete?stayId=${stay.id}`)
-                }
+                onClick={() => router.push(myGuest ? `/stays/${stay.id}/me` : `/join/complete?stayId=${stay.id}`)}
               >
                 <IconEdit />
                 {myGuest ? 'Modifier' : 'Créer ma fiche'}
@@ -140,9 +252,9 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
                   myGuest.category === 'adult' ? 'Adulte'
                   : myGuest.category === 'child' ? 'Enfant' : 'Bébé'
                 } />
-                {(myGuest.food_preferences as any)?.diet && (
-                  <MetaCell label="Régime" value={(myGuest.food_preferences as any).diet} />
-                )}
+                {readFoodPreferenceLines(myGuest).slice(0, 1).map((line) => (
+                  <MetaCell key={line} label="Alimentation" value={line} />
+                ))}
                 {myGuest.arrival_at && (
                   <MetaCell label="Arrivée" value={new Date(myGuest.arrival_at).toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })} />
                 )}
@@ -160,19 +272,25 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
             )}
           </div>
 
-          {/* Placeholders modules */}
-          <PlaceholderCard title="Programme" icon={<IconProgram />}
-            desc="Les activités, randos et moments libres apparaîtront ici dès que l'organisateur les aura ajoutés." />
-          <PlaceholderCard title="Repas" icon={<IconMeal />}
-            desc="Qui cuisine, qui fait les courses, qui dîne. Bientôt, vous pourrez vous inscrire sur les créneaux." />
+          <DashboardProgramCard
+            events={programEvents}
+            onOpen={() => router.push(`/stays/${stay.id}/organisation`)}
+          />
+
+          <DashboardLogisticsCard
+            rows={logisticsRows}
+            totalSections={logisticsSections.length}
+            totalItems={totalLogisticsItems}
+            remainingItems={remainingLogisticsItems}
+            unassignedItems={unassignedLogisticsItems}
+            onOpen={() => router.push(`/stays/${stay.id}/logistique`)}
+          />
+
           <PlaceholderCard title="Budget" icon={<IconBudget />}
             desc="Les dépenses partagées et votre solde apparaîtront ici. Pour l'instant, rien à régler." />
         </div>
 
-        {/* Sidebar */}
         <div className="sh-sidebar">
-
-          {/* LE GROUPE */}
           <div className="sh-card">
             <div className="sh-card-header">
               <div>
@@ -217,7 +335,10 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
             )}
           </div>
 
-          {/* Infos séjour — organisateurs */}
+          {foodAlerts.length > 0 && (
+            <FoodAlertsCard alerts={foodAlerts} onOpen={() => router.push(`/stays/${stay.id}/guests`)} />
+          )}
+
           {isOrganizer && (
             <div className="sh-card">
               <p className="sh-section-label">Informations</p>
@@ -229,20 +350,167 @@ export function StayHome({ stay, score, myGuest, participants, myRole }: Props) 
               <InfoRow label="Membres actifs" value={`${stay.active_member_count}`} />
             </div>
           )}
-
         </div>
       </div>
     </div>
   )
 }
 
-// ─── Sous-composants ───
+function DashboardProgramCard({ events, onOpen }: { events: StayHomeEvent[]; onOpen: () => void }) {
+  const nextEvent = events[0]
+
+  return (
+    <div className="sh-dashboard-card">
+      <div className="sh-dashboard-header">
+        <div className="sh-dashboard-title-row">
+          <div className="sh-placeholder-icon"><IconProgram /></div>
+          <div>
+            <p className="sh-section-label">Programme</p>
+            <h2>Prochains moments</h2>
+          </div>
+        </div>
+        <button className="sh-btn-outline" onClick={onOpen}>Voir</button>
+      </div>
+
+      {events.length === 0 ? (
+        <p className="sh-empty-hint">Aucun moment prévu pour l&apos;instant.</p>
+      ) : (
+        <>
+          {nextEvent && (
+            <div className="sh-next-event">
+              <span className="sh-next-event-icon">{EVENT_ICONS[nextEvent.event_type] ?? '📌'}</span>
+              <div>
+                <p className="sh-next-event-label">Prochain moment</p>
+                <p className="sh-next-event-title">{formatEventTime(nextEvent)} · {nextEvent.title}</p>
+                {nextEvent.location && <p className="sh-next-event-location">{nextEvent.location}</p>}
+              </div>
+            </div>
+          )}
+
+          <div className="sh-mini-list">
+            {events.slice(0, 4).map(event => (
+              <button key={event.id} className="sh-mini-row" type="button" onClick={onOpen}>
+                <span className={`sh-mini-dot sh-mini-dot-${event.event_type}`} />
+                <span className="sh-mini-time">{formatShortDate(event.event_date)} {formatTime(event.start_time)}</span>
+                <span className="sh-mini-title">{event.title}</span>
+                <span className="sh-mini-badge">{EVENT_LABELS[event.event_type] ?? event.event_type}</span>
+              </button>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  )
+}
+
+type LogisticsRow = {
+  section: StayHomeLogisticsSection
+  total: number
+  remaining: number
+  unassigned: number
+  progress: number
+}
+
+function DashboardLogisticsCard({
+  rows,
+  totalSections,
+  totalItems,
+  remainingItems,
+  unassignedItems,
+  onOpen,
+}: {
+  rows: LogisticsRow[]
+  totalSections: number
+  totalItems: number
+  remainingItems: number
+  unassignedItems: number
+  onOpen: () => void
+}) {
+  return (
+    <div className="sh-dashboard-card">
+      <div className="sh-dashboard-header">
+        <div className="sh-dashboard-title-row">
+          <div className="sh-placeholder-icon"><IconMeal /></div>
+          <div>
+            <p className="sh-section-label">Logistique</p>
+            <h2>À prévoir</h2>
+          </div>
+        </div>
+        <button className="sh-btn-outline" onClick={onOpen}>Voir</button>
+      </div>
+
+      {totalSections === 0 ? (
+        <p className="sh-empty-hint">Aucune section logistique pour l&apos;instant.</p>
+      ) : (
+        <>
+          <div className="sh-logistics-summary">
+            <SummaryPill value={String(totalSections)} label="section" plural={totalSections > 1} />
+            <SummaryPill value={String(remainingItems)} label="à finir" />
+            <SummaryPill value={String(unassignedItems)} label="non attribué" plural={unassignedItems > 1} />
+          </div>
+
+          {totalItems === 0 ? (
+            <p className="sh-empty-hint">Les sections sont créées, mais aucun élément n&apos;est encore listé.</p>
+          ) : (
+            <div className="sh-logistics-list">
+              {rows.map(row => (
+                <button key={row.section.id} className="sh-logistics-row" type="button" onClick={onOpen}>
+                  <span className="sh-logistics-icon">{LOGISTICS_ICONS[row.section.section_type] ?? '📌'}</span>
+                  <span className="sh-logistics-body">
+                    <span className="sh-logistics-title">{row.section.title}</span>
+                    <span className="sh-logistics-meta">
+                      {row.remaining === 0 ? 'Prêt' : `${row.remaining} à finaliser`}
+                      {row.unassigned > 0 ? ` · ${row.unassigned} non attribué${row.unassigned > 1 ? 's' : ''}` : ''}
+                    </span>
+                  </span>
+                  <span className="sh-logistics-progress">{row.progress}%</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function FoodAlertsCard({ alerts, onOpen }: { alerts: FoodAlert[]; onOpen: () => void }) {
+  return (
+    <div className="sh-card sh-food-card">
+      <div className="sh-card-header">
+        <div>
+          <p className="sh-section-label">À prendre en compte</p>
+          <p className="sh-card-name">Alimentation</p>
+        </div>
+        <button className="sh-btn-outline" onClick={onOpen}>Voir</button>
+      </div>
+      <div className="sh-food-list">
+        {alerts.slice(0, 5).map(alert => (
+          <div key={`${alert.guestId}-${alert.label}`} className="sh-food-row">
+            <span>🍽️</span>
+            <span><strong>{alert.name}</strong> · {alert.label}</span>
+          </div>
+        ))}
+        {alerts.length > 5 && <p className="sh-food-more">+ {alerts.length - 5} autre{alerts.length - 5 > 1 ? 's' : ''}</p>}
+      </div>
+    </div>
+  )
+}
 
 function MetaCell({ label, value, wide }: { label: string; value: string; wide?: boolean }) {
   return (
     <div className={`sh-meta-cell${wide ? ' sh-meta-cell-wide' : ''}`}>
       <div className="sh-meta-cell-label">{label}</div>
       <div className="sh-meta-cell-value">{value}</div>
+    </div>
+  )
+}
+
+function SummaryPill({ value, label, plural }: { value: string; label: string; plural?: boolean }) {
+  return (
+    <div className="sh-summary-pill">
+      <span>{value}</span>
+      <small>{label}{plural ? 's' : ''}</small>
     </div>
   )
 }
@@ -270,7 +538,51 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   )
 }
 
-// ─── Icônes ───
+function formatTime(value: string | null) {
+  if (!value) return ''
+  return value.slice(0, 5)
+}
+
+function formatShortDate(value: string) {
+  const date = new Date(`${value}T12:00:00`)
+  return date.toLocaleDateString('fr-FR', { weekday: 'short', day: 'numeric', month: 'short' })
+}
+
+function formatEventTime(event: StayHomeEvent) {
+  const day = formatShortDate(event.event_date)
+  const time = formatTime(event.start_time)
+  return time ? `${day} ${time}` : day
+}
+
+function readFoodPreferenceLines(guest: GuestSummary | { food_preferences?: unknown }) {
+  const prefs = guest.food_preferences
+  if (!prefs || typeof prefs !== 'object' || Array.isArray(prefs)) return []
+
+  const record = prefs as Record<string, unknown>
+  const lines: string[] = []
+
+  const diet = typeof record.diet === 'string' ? record.diet.trim() : ''
+  if (diet) lines.push(diet)
+
+  const allergies = Array.isArray(record.allergies)
+    ? record.allergies.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+    : []
+  if (allergies.length > 0) lines.push(`Allergies : ${allergies.join(', ')}`)
+
+  return lines
+}
+
+function getFoodAlerts(participants: GuestSummary[]) {
+  return participants.flatMap((guest) => {
+    const name = `${guest.first_name}${guest.last_name ? ` ${guest.last_name}` : ''}`
+    return readFoodPreferenceLines(guest).map((label) => ({
+      guestId: guest.id,
+      name,
+      label,
+    }))
+  })
+}
+
 const IconPin = () => <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round"><path d="M12 21s-7-6.2-7-12a7 7 0 1 1 14 0c0 5.8-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/></svg>
 const IconArrow = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="13 6 19 12 13 18"/></svg>
 const IconEdit = () => <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round"><path d="M14 4l6 6-11 11H3v-6L14 4z"/></svg>

@@ -21,6 +21,7 @@ const IconCart = () => <svg viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><c
 const IconWallet = () => <svg viewBox="0 0 24 24"><path d="M20 12V8H6a2 2 0 0 1 0-4h14v4"/><path d="M4 6v12a2 2 0 0 0 2 2h14v-4"/><circle cx="16" cy="14" r="1"/></svg>
 const IconPhoto = () => <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
 const IconSettings = () => <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+const IconUser = () => <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
 const IconLogout = () => <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
 const IconMenu = () => <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" strokeWidth="1.8" strokeLinecap="round"><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
 const IconX = () => <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" fill="none" strokeWidth="1.8" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -37,6 +38,7 @@ export function StayLayout({ stay, children }: { stay: MyStay; children: React.R
 
   const navItems: NavItem[] = [
     { label: 'Accueil', href: baseHref, icon: <IconSun /> },
+    { label: 'Ma fiche', href: `${baseHref}/me`, icon: <IconUser /> },
     { label: 'Invités', href: `${baseHref}/guests`, icon: <IconUsers /> },
     { label: 'Organisation', href: `${baseHref}/organisation`, icon: <IconCalendar /> },
     { label: 'Logistique', href: `${baseHref}/logistique`, icon: <IconCart /> },
@@ -48,6 +50,7 @@ export function StayLayout({ stay, children }: { stay: MyStay; children: React.R
   const mobileNavItems = [
     { label: 'Séjours', href: '/dashboard', icon: <IconHome /> },
     { label: 'Accueil', href: baseHref, icon: <IconSun /> },
+    { label: 'Ma fiche', href: `${baseHref}/me`, icon: <IconUser /> },
     { label: 'Invités', href: `${baseHref}/guests`, icon: <IconUsers /> },
     { label: 'Plus', href: '#', icon: <IconDots />, onClick: () => setDrawerOpen(true) },
   ]
@@ -92,6 +95,16 @@ export function StayLayout({ stay, children }: { stay: MyStay; children: React.R
         ))}
       </nav>
       <div className="sidebar-bottom">
+        <Link
+          href="/account/profile"
+          className="nav-item sidebar-account-link"
+          onClick={onItemClick}
+          title={collapsed ? 'Mon profil' : undefined}
+        >
+          <IconUser />
+          <span className="nav-label">Mon profil</span>
+        </Link>
+
         <button className="signout-btn" onClick={handleSignOut}>
           <IconLogout />
           <span className="signout-label">Déconnexion</span>
