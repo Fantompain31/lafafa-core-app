@@ -9,6 +9,7 @@ import { utcIsoToDateTimeLocal } from '@/shared/utils/dates'
 type Props = {
   stayId: string
   guest?: GuestSummary
+  linkedUserId?: string 
   onSuccess?: () => void
   onCancel?: () => void
 }
@@ -83,6 +84,7 @@ export function GuestForm({ stayId, guest, onSuccess, onCancel }: Props) {
           departureAt: departureAt || null,
           foodPreferences,
           notes,
+          linkedUserId,
         })
       }
       onSuccess?.()
