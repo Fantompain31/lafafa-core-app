@@ -24,6 +24,9 @@ export type MyStay = {
   end_date: string | null
   location_name: string | null
   timezone: string
+  cover_image_file_id: string | null
+  cover_image_bucket: string | null
+  cover_image_path: string | null
   archived_at: string | null
   created_at: string
   updated_at: string

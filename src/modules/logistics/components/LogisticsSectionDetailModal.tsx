@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import type { FormEvent } from "react";
 import type {
   LogisticsGuest,
   LogisticsItem,
@@ -27,6 +28,8 @@ interface Props {
   onTakeItem: (item: LogisticsItem) => Promise<void>;
   onToggleItem: (item: LogisticsItem) => Promise<void>;
   onDeleteItem: (itemId: string) => Promise<void>;
+  onQuickAddItem?: (sectionId: string, label: string) => Promise<void>;
+  onQuantityChange?: (item: LogisticsItem, delta: number) => Promise<void>;
 }
 
 type ItemFilterKey = "all" | "mine" | "unassigned" | "todo" | "done";
@@ -42,7 +45,10 @@ const ITEM_FILTERS: Array<{ key: ItemFilterKey; label: string; icon: string }> =
 
 const FOOD_SECTION_TYPES = new Set(["repas", "meal", "apero", "aperitif"]);
 
-function isAccommodationLinkedItem(item: LogisticsItem, section: LogisticsSectionWithItems) {
+function isAccommodationLinkedItem(
+  item: LogisticsItem,
+  section: LogisticsSectionWithItems,
+) {
   return (
     item.source_type === "accommodation_bed" ||
     section.source_type === "accommodation_bed" ||
@@ -78,9 +84,13 @@ export default function LogisticsSectionDetailModal({
   onTakeItem,
   onToggleItem,
   onDeleteItem,
+  onQuickAddItem,
+  onQuantityChange,
 }: Props) {
   const [itemFilter, setItemFilter] = useState<ItemFilterKey>("all");
   const [foodOpen, setFoodOpen] = useState(false);
+  const [quickLabel, setQuickLabel] = useState("");
+  const [quickLoading, setQuickLoading] = useState(false);
   const icon = LOGISTICS_SECTION_ICONS[section.section_type] ?? "📌";
   const label =
     LOGISTICS_SECTION_LABELS[section.section_type] ?? section.section_type;
@@ -111,6 +121,22 @@ export default function LogisticsSectionDetailModal({
     const doneItems = filtered.filter((item) => item.is_checked);
     return [...todoItems, ...doneItems];
   }, [currentGuestId, itemFilter, section.items]);
+
+  async function handleQuickAdd(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!onQuickAddItem || isSourceLockedSection) return;
+
+    const label = quickLabel.trim();
+    if (!label) return;
+
+    setQuickLoading(true);
+    try {
+      await onQuickAddItem(section.id, label);
+      setQuickLabel("");
+    } finally {
+      setQuickLoading(false);
+    }
+  }
 
   return (
     <div className="lg-detail-overlay" onClick={onClose}>
@@ -159,15 +185,23 @@ export default function LogisticsSectionDetailModal({
               <span className="lg-food-alert-icon">🍽️</span>
               <span>
                 <strong>Préférences alimentaires</strong>
-                <small>{foodAlerts.length} point{foodAlerts.length > 1 ? "s" : ""} à prendre en compte</small>
+                <small>
+                  {foodAlerts.length} point{foodAlerts.length > 1 ? "s" : ""} à
+                  prendre en compte
+                </small>
               </span>
-              <span className="lg-food-alert-caret">{foodOpen ? "−" : "+"}</span>
+              <span className="lg-food-alert-caret">
+                {foodOpen ? "−" : "+"}
+              </span>
             </button>
 
             {foodOpen && (
               <div className="lg-food-alert-list">
                 {foodAlerts.map((alert) => (
-                  <div key={`${alert.guestId}-${alert.label}`} className="lg-food-alert-row">
+                  <div
+                    key={`${alert.guestId}-${alert.label}`}
+                    className="lg-food-alert-row"
+                  >
                     <span>{alert.name}</span>
                     <strong>{alert.label}</strong>
                   </div>
@@ -191,28 +225,46 @@ export default function LogisticsSectionDetailModal({
         </div>
 
         {!isSourceLockedSection && (
-          <div className="lg-detail-actions">
-            <button
-              className="lg-btn-primary"
-              type="button"
-              onClick={() => onAddItem(section.id)}
-            >
-              + Ajouter
-            </button>
-            <button
-              className="lg-btn-ghost"
-              type="button"
-              onClick={() => onEditSection(section)}
-            >
-              Modifier
-            </button>
-            <button
-              className="lg-btn-danger"
-              type="button"
-              onClick={() => onHideSection(section.id)}
-            >
-              Masquer
-            </button>
+          <div className="lg-detail-actions-stack">
+            <form className="lg-quick-add" onSubmit={handleQuickAdd}>
+              <input
+                value={quickLabel}
+                onChange={(event) => setQuickLabel(event.target.value)}
+                placeholder="Ajouter rapidement : charbon, gobelets, draps…"
+                disabled={quickLoading}
+              />
+              <button
+                type="submit"
+                className="lg-btn-primary"
+                disabled={quickLoading || !quickLabel.trim()}
+              >
+                + Ajouter
+              </button>
+            </form>
+
+            <div className="lg-detail-secondary-actions">
+              <button
+                className="lg-btn-ghost"
+                type="button"
+                onClick={() => onAddItem(section.id)}
+              >
+                Formulaire complet
+              </button>
+              <button
+                className="lg-btn-ghost"
+                type="button"
+                onClick={() => onEditSection(section)}
+              >
+                Modifier la section
+              </button>
+              <button
+                className="lg-btn-danger"
+                type="button"
+                onClick={() => onHideSection(section.id)}
+              >
+                Masquer
+              </button>
+            </div>
           </div>
         )}
 
@@ -263,6 +315,7 @@ export default function LogisticsSectionDetailModal({
                 onTake={onTakeItem}
                 onToggle={onToggleItem}
                 onDelete={onDeleteItem}
+                onQuantityChange={onQuantityChange}
                 isSourceLocked={isAccommodationLinkedItem(item, section)}
               />
             ))}
@@ -296,7 +349,8 @@ function readFoodPreferenceLines(value: unknown) {
 
   const allergies = Array.isArray(record.allergies)
     ? record.allergies.filter(
-        (item): item is string => typeof item === "string" && item.trim().length > 0,
+        (item): item is string =>
+          typeof item === "string" && item.trim().length > 0,
       )
     : [];
 

@@ -41,6 +41,7 @@ interface Props {
 
 type FilterKey = "all" | LogisticsSectionType;
 type StatusFilterKey = "all" | "mine" | "unassigned" | "todo" | "done";
+type ViewMode = "sections" | "list";
 
 const FILTERS: FilterKey[] = [
   "all",
@@ -103,6 +104,7 @@ export default function LogisticsPageClient({
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("all");
   const [search, setSearch] = useState("");
   const [openedSectionId, setOpenedSectionId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>("sections");
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +121,7 @@ export default function LogisticsPageClient({
             : null,
         );
       } catch (error) {
-        console.warn('Impossible de rafraîchir la logistique', error);
+        console.warn("Impossible de rafraîchir la logistique", error);
       }
     }
 
@@ -130,18 +132,18 @@ export default function LogisticsPageClient({
     };
 
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
+      if (document.visibilityState === "visible") {
         void refreshSections();
       }
     };
 
-    window.addEventListener('focus', handleFocus);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     return () => {
       cancelled = true;
-      window.removeEventListener('focus', handleFocus);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [stayId]);
 
@@ -229,6 +231,44 @@ export default function LogisticsPageClient({
       );
 
       return sectionContent.includes(query) || itemContent.includes(query);
+    });
+  }, [activeFilter, currentGuestId, search, sections, statusFilter]);
+
+  const filteredItems = useMemo(() => {
+    const query = normalize(search.trim());
+
+    const rows = sections.flatMap((section) =>
+      section.items.map((item) => ({ section, item })),
+    );
+
+    return rows.filter(({ section, item }) => {
+      if (activeFilter !== "all" && section.section_type !== activeFilter)
+        return false;
+
+      if (statusFilter === "mine") {
+        if (
+          !currentGuestId ||
+          item.assigned_guest_id !== currentGuestId ||
+          item.is_checked
+        )
+          return false;
+      }
+
+      if (
+        statusFilter === "unassigned" &&
+        (item.assigned_guest_id || item.is_checked)
+      )
+        return false;
+      if (statusFilter === "todo" && item.is_checked) return false;
+      if (statusFilter === "done" && !item.is_checked) return false;
+
+      if (!query) return true;
+
+      const content = normalize(
+        `${section.title} ${section.notes ?? ""} ${item.label} ${item.quantity ?? ""} ${item.notes ?? ""}`,
+      );
+
+      return content.includes(query);
     });
   }, [activeFilter, currentGuestId, search, sections, statusFilter]);
 
@@ -334,6 +374,55 @@ export default function LogisticsPageClient({
           : section,
       ),
     );
+  }
+
+  async function handleQuickAddItem(sectionId: string, label: string) {
+    try {
+      const created = await createLogisticsItem(sectionId, {
+        label,
+        quantity: "1",
+        notes: "",
+        assigned_guest_id: "",
+      });
+
+      setSections((prev) =>
+        prev.map((section) =>
+          section.id === created.section_id
+            ? { ...section, items: [...section.items, created] }
+            : section,
+        ),
+      );
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Impossible d'ajouter l'élément.",
+      );
+    }
+  }
+
+  async function handleQuantityChange(item: LogisticsItem, delta: number) {
+    const currentQuantity = Number.parseInt(item.quantity ?? "1", 10);
+    const nextQuantity = Math.max(
+      1,
+      (Number.isFinite(currentQuantity) ? currentQuantity : 1) + delta,
+    );
+
+    try {
+      const updated = await updateLogisticsItem(item.id, {
+        label: item.label,
+        quantity: String(nextQuantity),
+        notes: item.notes ?? "",
+        assigned_guest_id: item.assigned_guest_id ?? "",
+      });
+      replaceItem(updated);
+    } catch (error) {
+      setPageError(
+        error instanceof Error
+          ? error.message
+          : "Impossible de modifier la quantité.",
+      );
+    }
   }
 
   async function handleAssignItem(itemId: string, guestId: string | null) {
@@ -444,6 +533,22 @@ export default function LogisticsPageClient({
         </div>
 
         <div className="lg-toolbar-right">
+          <div className="lg-view-toggle" aria-label="Choix de vue">
+            <button
+              type="button"
+              className={`lg-view-btn${viewMode === "sections" ? " active" : ""}`}
+              onClick={() => setViewMode("sections")}
+            >
+              Sections
+            </button>
+            <button
+              type="button"
+              className={`lg-view-btn${viewMode === "list" ? " active" : ""}`}
+              onClick={() => setViewMode("list")}
+            >
+              Liste générale
+            </button>
+          </div>
           <button className="lg-btn-primary" onClick={openCreateSection}>
             + Ajouter
           </button>
@@ -562,6 +667,60 @@ export default function LogisticsPageClient({
             Créer la première section
           </button>
         </div>
+      ) : viewMode === "list" ? (
+        filteredItems.length === 0 ? (
+          <div className="lg-empty">
+            <div className="lg-empty-icon">🔎</div>
+            <p>Aucun élément avec ces filtres.</p>
+            <button
+              className="lg-btn-ghost"
+              onClick={() => {
+                setSearch("");
+                setActiveFilter("all");
+                setStatusFilter("all");
+              }}
+            >
+              Réinitialiser
+            </button>
+          </div>
+        ) : (
+          <div className="lg-general-list">
+            <div className="lg-general-list-header">
+              <div>
+                <p className="lg-eyebrow">Liste générale</p>
+                <h2>
+                  {filteredItems.length} élément
+                  {filteredItems.length > 1 ? "s" : ""} à suivre
+                </h2>
+              </div>
+              <span>Tout le séjour</span>
+            </div>
+            <div className="lg-items-list">
+              {filteredItems.map(({ section, item }) => (
+                <LogisticsItemRow
+                  key={item.id}
+                  item={item}
+                  guests={guests}
+                  currentGuestId={currentGuestId}
+                  onEdit={openEditItem}
+                  onAssign={handleAssignItem}
+                  onTake={handleTakeItem}
+                  onToggle={handleToggleItem}
+                  onDelete={handleDeleteItem}
+                  onQuantityChange={handleQuantityChange}
+                  isSourceLocked={
+                    item.source_type === "accommodation_bed" ||
+                    section.source_type === "accommodation_bed" ||
+                    Boolean(
+                      item.notes?.toLowerCase().includes("module couchage"),
+                    )
+                  }
+                  sectionTitle={section.title}
+                />
+              ))}
+            </div>
+          </div>
+        )
       ) : filteredSections.length === 0 ? (
         <div className="lg-empty">
           <div className="lg-empty-icon">🔎</div>
@@ -626,6 +785,8 @@ export default function LogisticsPageClient({
           onTakeItem={handleTakeItem}
           onToggleItem={handleToggleItem}
           onDeleteItem={handleDeleteItem}
+          onQuickAddItem={handleQuickAddItem}
+          onQuantityChange={handleQuantityChange}
         />
       )}
 
