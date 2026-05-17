@@ -42,6 +42,21 @@ const ITEM_FILTERS: Array<{ key: ItemFilterKey; label: string; icon: string }> =
 
 const FOOD_SECTION_TYPES = new Set(["repas", "meal", "apero", "aperitif"]);
 
+function isAccommodationLinkedItem(item: LogisticsItem, section: LogisticsSectionWithItems) {
+  return (
+    item.source_type === "accommodation_bed" ||
+    section.source_type === "accommodation_bed" ||
+    Boolean(item.notes?.toLowerCase().includes("module couchage"))
+  );
+}
+
+function isAccommodationLinkedSection(section: LogisticsSectionWithItems) {
+  return (
+    section.source_type === "accommodation_bed" ||
+    section.items.some((item) => isAccommodationLinkedItem(item, section))
+  );
+}
+
 type FoodAlert = {
   guestId: string;
   name: string;
@@ -69,6 +84,7 @@ export default function LogisticsSectionDetailModal({
   const icon = LOGISTICS_SECTION_ICONS[section.section_type] ?? "📌";
   const label =
     LOGISTICS_SECTION_LABELS[section.section_type] ?? section.section_type;
+  const isSourceLockedSection = isAccommodationLinkedSection(section);
 
   const foodAlerts = useMemo(() => {
     if (!FOOD_SECTION_TYPES.has(section.section_type)) return [];
@@ -115,6 +131,9 @@ export default function LogisticsSectionDetailModal({
                 </span>
                 {section.source_type === "organization_event" && (
                   <span className="lg-source-badge">lié au planning</span>
+                )}
+                {isSourceLockedSection && (
+                  <span className="lg-source-badge">lié au couchage</span>
                 )}
               </div>
               <h2>{section.title}</h2>
@@ -175,27 +194,38 @@ export default function LogisticsSectionDetailModal({
         </div>
 
         <div className="lg-detail-actions">
-          <button
-            className="lg-btn-primary"
-            type="button"
-            onClick={() => onAddItem(section.id)}
-          >
-            + Ajouter
-          </button>
-          <button
-            className="lg-btn-ghost"
-            type="button"
-            onClick={() => onEditSection(section)}
-          >
-            Modifier
-          </button>
-          <button
-            className="lg-btn-danger"
-            type="button"
-            onClick={() => onHideSection(section.id)}
-          >
-            Masquer
-          </button>
+          {!isSourceLockedSection && (
+            <button
+              className="lg-btn-primary"
+              type="button"
+              onClick={() => onAddItem(section.id)}
+            >
+              + Ajouter
+            </button>
+          )}
+          {!isSourceLockedSection && (
+            <button
+              className="lg-btn-ghost"
+              type="button"
+              onClick={() => onEditSection(section)}
+            >
+              Modifier
+            </button>
+          )}
+          {!isSourceLockedSection && (
+            <button
+              className="lg-btn-danger"
+              type="button"
+              onClick={() => onHideSection(section.id)}
+            >
+              Masquer
+            </button>
+          )}
+          {isSourceLockedSection && (
+            <p className="lg-source-lock-message">
+              Cette section vient du module Couchage. Modifiez ou supprimez les couchages depuis Couchage.
+            </p>
+          )}
         </div>
 
         {section.items.length > 0 && (
@@ -245,6 +275,7 @@ export default function LogisticsSectionDetailModal({
                 onTake={onTakeItem}
                 onToggle={onToggleItem}
                 onDelete={onDeleteItem}
+                isSourceLocked={isAccommodationLinkedItem(item, section)}
               />
             ))}
           </div>

@@ -163,10 +163,7 @@
 }
 
 .ac-layout {
-  display: grid;
-  grid-template-columns: minmax(0, 360px) minmax(0, 1fr);
-  gap: 1rem;
-  align-items: start;
+  display: block;
 }
 
 .ac-room-list {
@@ -254,6 +251,47 @@
   padding: 1.1rem;
   min-height: 320px;
 }
+.ac-detail-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 220;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.25rem;
+}
+
+.ac-detail-modal {
+  width: min(760px, 100%);
+  max-height: calc(100dvh - 2.5rem);
+  overflow-y: auto;
+  background: #fff;
+  border: 0.5px solid var(--ac-border);
+  border-radius: 1rem;
+  padding: 1.1rem;
+  box-shadow: 0 22px 60px rgba(44, 36, 32, 0.18);
+}
+
+.ac-detail-close {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: none;
+  background: var(--ac-soft);
+  color: #7a6a5a;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.ac-detail-close:hover {
+  background: #efe5d8;
+}
+
 
 .ac-detail-header {
   display: flex;
@@ -546,7 +584,6 @@
   .ac-toolbar { flex-direction: column; }
   .ac-toolbar .ac-btn-primary { width: 100%; }
   .ac-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .ac-layout { grid-template-columns: 1fr; }
   .ac-detail-header,
   .ac-bed-header,
   .ac-unassigned { flex-direction: column; align-items: stretch; }
@@ -558,4 +595,8 @@
   .ac-modal-overlay { padding: 0; align-items: stretch; }
   .ac-modal { max-width: none; max-height: none; height: 100dvh; border-radius: 0; padding: 1rem 0.9rem 5rem; }
   .ac-modal-header { position: sticky; top: 0; background: #fff; z-index: 5; padding-bottom: 0.75rem; border-bottom: 0.5px solid rgba(196, 168, 130, 0.18); }
+  .ac-detail-overlay { padding: 0; align-items: stretch; }
+  .ac-detail-modal { width: 100%; max-height: none; height: 100dvh; border-radius: 0; padding: 1rem 0.9rem 5rem; }
+  .ac-detail-modal .ac-detail-header { position: sticky; top: 0; background: #fff; z-index: 5; padding-bottom: 0.75rem; border-bottom: 0.5px solid rgba(196, 168, 130, 0.18); }
+
 }

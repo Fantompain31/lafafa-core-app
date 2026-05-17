@@ -41,6 +41,8 @@ export interface LogisticsItem {
   checked_by: string | null;
   checked_at: string | null;
   created_by: string | null;
+  source_type?: string | null;
+  source_id?: string | null;
   created_at: string;
   updated_at: string;
 }

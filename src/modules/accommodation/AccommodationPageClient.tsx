@@ -331,43 +331,49 @@ export default function AccommodationPageClient({ stayId, initialRooms, guests }
               />
             ))}
           </div>
+        </div>
+      )}
 
-          <div className="ac-detail-card">
-            {selectedRoom ? (
-              <>
-                <div className="ac-detail-header">
-                  <div>
-                    <p className="ac-eyebrow">Pièce</p>
-                    <h2>{selectedRoom.name}</h2>
-                    {selectedRoom.notes && <p>{selectedRoom.notes}</p>}
-                  </div>
-                  <div className="ac-detail-actions">
-                    <button className="ac-btn-ghost" onClick={() => openEditRoom(selectedRoom)}>Renommer</button>
-                    <button className="ac-btn-danger" onClick={() => void handleDeleteRoom(selectedRoom)}>Supprimer</button>
-                  </div>
-                </div>
+      {selectedRoom && (
+        <div className="ac-detail-overlay" onClick={() => setSelectedRoomId(null)}>
+          <section className="ac-detail-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="ac-detail-header">
+              <div>
+                <p className="ac-eyebrow">Pièce</p>
+                <h2>{selectedRoom.name}</h2>
+                {selectedRoom.notes && <p>{selectedRoom.notes}</p>}
+              </div>
+              <div className="ac-detail-actions">
+                <button className="ac-btn-ghost" onClick={() => openEditRoom(selectedRoom)}>Renommer</button>
+                <button className="ac-btn-danger" onClick={() => void handleDeleteRoom(selectedRoom)}>Supprimer</button>
+                <button
+                  className="ac-detail-close"
+                  type="button"
+                  onClick={() => setSelectedRoomId(null)}
+                  aria-label="Fermer"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
 
-                <div className="ac-beds">
-                  {selectedRoom.beds.map((bed) => (
-                    <BedCard
-                      key={bed.id}
-                      bed={bed}
-                      guests={guests}
-                      guestMap={guestMap}
-                      onAssign={handleAssign}
-                      onRemoveAssignment={handleRemoveAssignment}
-                      onEdit={openEditBed}
-                      onDelete={handleDeleteBed}
-                    />
-                  ))}
-                </div>
+            <div className="ac-beds">
+              {selectedRoom.beds.map((bed) => (
+                <BedCard
+                  key={bed.id}
+                  bed={bed}
+                  guests={guests}
+                  guestMap={guestMap}
+                  onAssign={handleAssign}
+                  onRemoveAssignment={handleRemoveAssignment}
+                  onEdit={openEditBed}
+                  onDelete={handleDeleteBed}
+                />
+              ))}
+            </div>
 
-                <button className="ac-add-bed" onClick={() => openAddBed(selectedRoom)}>+ Ajouter un couchage</button>
-              </>
-            ) : (
-              <div className="ac-empty-inline">Sélectionnez une pièce.</div>
-            )}
-          </div>
+            <button className="ac-add-bed" onClick={() => openAddBed(selectedRoom)}>+ Ajouter un couchage</button>
+          </section>
         </div>
       )}
 

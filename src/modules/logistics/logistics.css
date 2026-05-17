@@ -1328,3 +1328,33 @@
     text-align: left;
   }
 }
+
+.lg-source-lock {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: #FAF7F3;
+  color: #9a8978;
+  font-size: 0.8rem;
+}
+
+.lg-source-lock-message {
+  margin: 0;
+  color: #7a6a5a;
+  background: #FAF7F3;
+  border: 0.5px solid rgba(196, 168, 130, 0.22);
+  border-radius: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+}
+
+.lg-item-source-note {
+  margin: 0.25rem 0 0;
+  color: #9a8978;
+  font-size: 0.74rem;
+  line-height: 1.35;
+}
