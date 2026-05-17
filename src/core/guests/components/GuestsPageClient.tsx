@@ -13,11 +13,13 @@ type Props = {
   stayId: string
   initialGuests: GuestSummary[]
   myRole: MemberRole
+  stayStartDate?: string | null
+  stayEndDate?: string | null
 }
 
 type View = 'list' | 'add' | 'edit'
 
-export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
+export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate = null, stayEndDate = null }: Props) {
   const [guests, setGuests] = useState<GuestSummary[]>(initialGuests)
   const [view, setView] = useState<View>('list')
   const [selectedGuest, setSelectedGuest] = useState<GuestSummary | null>(null)
@@ -27,6 +29,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null)
 
   const isOrganizer = permissions.canManageGuests(myRole)
+  const isOwner     = myRole === 'owner'
 
   async function reload() {
     setGuests(await guestsService.getGuests(stayId))
@@ -69,15 +72,22 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
   async function handleRevoke(guest: GuestSummary) {
     if (!confirm(`Révoquer l'invitation de ${guest.first_name} ?`)) return
     const supabase = createClient()
-
-    if (guest.active_link_id) {
-      await supabase.rpc('revoke_guest_access_link', { p_link_id: guest.active_link_id })
-    }
-    if (guest.active_invitation_id) {
-      await supabase.rpc('revoke_stay_invitation', { p_invitation_id: guest.active_invitation_id })
-    }
-
+    if (guest.active_link_id) await supabase.rpc('revoke_guest_access_link', { p_link_id: guest.active_link_id })
+    if (guest.active_invitation_id) await supabase.rpc('revoke_stay_invitation', { p_invitation_id: guest.active_invitation_id })
     void reload()
+  }
+
+  async function handleRemoveGuest(guest: GuestSummary) {
+    if (!confirm(
+      `Supprimer définitivement ${guest.first_name} du séjour ?\n\n` +
+      `Ses attributions dans les modules seront libérées et ses événements d'arrivée/départ supprimés.`
+    )) return
+    try {
+      await guestsService.removeGuest(guest.id)
+      setGuests(prev => prev.filter(g => g.id !== guest.id))
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Erreur lors de la suppression.')
+    }
   }
 
   const filteredGuests = guests.filter(g => {
@@ -93,8 +103,14 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
 
   if (view === 'add') {
     return (
-      <GuestEditor title="Ajouter un invité" onBack={() => setView('list')}>
-        <GuestForm stayId={stayId} onSuccess={handleSuccess} onCancel={() => setView('list')} />
+      <GuestEditor title="Ajouter un membre" onBack={() => setView('list')}>
+        <GuestForm
+          stayId={stayId}
+          stayStartDate={stayStartDate}
+          stayEndDate={stayEndDate}
+          onSuccess={handleSuccess}
+          onCancel={() => setView('list')}
+        />
       </GuestEditor>
     )
   }
@@ -107,6 +123,8 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
       >
         <GuestForm
           stayId={stayId}
+          stayStartDate={stayStartDate}
+          stayEndDate={stayEndDate}
           guest={selectedGuest}
           onSuccess={handleSuccess}
           onCancel={() => { setView('list'); setSelectedGuest(null) }}
@@ -121,7 +139,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-base font-medium text-neutral-900">Invités</h2>
+          <h2 className="text-base font-medium text-neutral-900">Membres</h2>
           <p className="text-xs text-neutral-500">
             {confirmed} confirmé{confirmed > 1 ? 's' : ''} / {total} au total
           </p>
@@ -179,9 +197,11 @@ export function GuestsPageClient({ stayId, initialGuests, myRole }: Props) {
               key={guest.id}
               guest={guest}
               isOrganizer={isOrganizer}
+              isOwner={isOwner}
               onInvite={handleInviteGuest}
               onCopyLink={handleCopyLink}
               onRevoke={handleRevoke}
+              onRemove={isOwner ? handleRemoveGuest : undefined}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />
           ))}

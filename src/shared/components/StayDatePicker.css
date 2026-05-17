@@ -1,0 +1,295 @@
+/* src/shared/components/StayDatePicker.css */
+
+.sdp-root {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  position: relative;
+  font-family: 'Geist', sans-serif;
+}
+
+/* ── Label ── */
+.sdp-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #555;
+}
+.sdp-label.required::after {
+  content: ' *';
+  color: #c0392b;
+}
+
+/* ── Trigger ── */
+.sdp-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  border: 1px solid rgba(196,168,130,0.4);
+  border-radius: 8px;
+  padding: 8px 12px;
+  background: #fff;
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+  min-height: 40px;
+}
+.sdp-trigger:hover:not(.disabled) {
+  border-color: #C4A882;
+}
+.sdp-trigger.open {
+  border-color: #C4A882;
+  box-shadow: 0 0 0 3px rgba(196,168,130,0.15);
+}
+.sdp-trigger.disabled {
+  background: #f9f9f9;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+.sdp-trigger.has-error {
+  border-color: #e74c3c;
+}
+.sdp-trigger:focus {
+  outline: none;
+  border-color: #C4A882;
+  box-shadow: 0 0 0 3px rgba(196,168,130,0.15);
+}
+
+.sdp-trigger-value {
+  font-size: 0.88rem;
+  color: #1a1a1a;
+  flex: 1;
+}
+.sdp-trigger-value.placeholder {
+  color: #aaa;
+}
+
+.sdp-trigger-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sdp-clear-btn {
+  background: none;
+  border: none;
+  font-size: 0.75rem;
+  color: #aaa;
+  cursor: pointer;
+  padding: 2px 4px;
+  border-radius: 4px;
+  line-height: 1;
+  transition: color 0.1s, background 0.1s;
+}
+.sdp-clear-btn:hover {
+  color: #555;
+  background: #f0f0f0;
+}
+
+.sdp-chevron {
+  font-size: 0.9rem;
+  color: #aaa;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.sdp-chevron.up {
+  transform: rotate(180deg);
+}
+
+/* ── Popover ── */
+.sdp-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  z-index: 100;
+  background: #fff;
+  border: 0.5px solid rgba(196,168,130,0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  padding: 12px;
+  width: 300px;
+  animation: sdp-fade-in 0.15s ease;
+}
+
+@keyframes sdp-fade-in {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Info séjour ── */
+.sdp-stay-info {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  color: #8B7355;
+  background: rgba(196,168,130,0.08);
+  border-radius: 6px;
+  padding: 5px 8px;
+  margin-bottom: 10px;
+}
+.sdp-stay-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #C4A882;
+  flex-shrink: 0;
+}
+
+/* ── Navigation mois ── */
+.sdp-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.sdp-nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.2rem;
+  color: #888;
+  padding: 4px 10px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.1s, color 0.1s;
+}
+.sdp-nav-btn:hover {
+  background: rgba(196,168,130,0.1);
+  color: #333;
+}
+.sdp-nav-label {
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #1a1a1a;
+}
+
+/* ── Grille calendrier ── */
+.sdp-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.sdp-day-header {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: #aaa;
+  text-align: center;
+  padding: 4px 0;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.sdp-day {
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.82rem;
+  border: none;
+  background: transparent;
+  border-radius: 6px;
+  cursor: pointer;
+  color: #1a1a1a;
+  transition: background 0.1s, color 0.1s;
+  position: relative;
+  padding: 0;
+}
+.sdp-day:hover {
+  background: rgba(196,168,130,0.15);
+}
+
+/* Autre mois — atténué mais cliquable */
+.sdp-day.other-month {
+  color: #ccc;
+}
+
+/* Aujourd'hui */
+.sdp-day.today:not(.selected) {
+  font-weight: 700;
+  color: #C4A882;
+}
+.sdp-day.today:not(.selected)::after {
+  content: '';
+  position: absolute;
+  bottom: 3px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #C4A882;
+}
+
+/* Dans le séjour — surbrillance douce */
+.sdp-day.in-stay:not(.selected) {
+  background: rgba(196,168,130,0.15);
+  color: #6b5435;
+  font-weight: 500;
+  border-radius: 0;
+}
+
+/* Premier et dernier jour du séjour */
+.sdp-day.stay-start:not(.selected) {
+  background: rgba(196,168,130,0.15);
+  border-radius: 6px 0 0 6px;
+}
+.sdp-day.stay-end:not(.selected) {
+  background: rgba(196,168,130,0.15);
+  border-radius: 0 6px 6px 0;
+}
+/* Si séjour d'un seul jour */
+.sdp-day.stay-start.stay-end:not(.selected) {
+  border-radius: 6px;
+}
+
+/* Jour sélectionné */
+.sdp-day.selected {
+  background: #C4A882 !important;
+  color: #fff !important;
+  font-weight: 600;
+  border-radius: 6px !important;
+}
+.sdp-day.selected:hover {
+  background: #b09070 !important;
+}
+
+/* ── Avertissement hors séjour ── */
+.sdp-warning {
+  font-size: 0.75rem;
+  color: #9a6f00;
+  background: #fef9e7;
+  border: 0.5px solid #f0d878;
+  border-radius: 6px;
+  padding: 5px 9px;
+}
+
+/* ── Helper / Erreur ── */
+.sdp-helper {
+  font-size: 0.75rem;
+  color: #aaa;
+}
+.sdp-error {
+  font-size: 0.75rem;
+  color: #e74c3c;
+}
+
+/* ── Responsive mobile ── */
+@media (max-width: 480px) {
+  .sdp-popover {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    top: auto;
+    padding: 16px;
+    box-shadow: 0 -4px 32px rgba(0,0,0,0.15);
+  }
+  .sdp-day {
+    font-size: 0.9rem;
+    min-height: 38px;
+  }
+}

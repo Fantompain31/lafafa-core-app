@@ -9,6 +9,7 @@ import type {
   EventStatus,
 } from '../organisation.types';
 import { EVENT_TYPE_LABELS, MULTIDAY_TYPES } from '../organisation.types';
+import { StayDatePicker } from '@/shared/components/StayDatePicker';
 
 interface Props {
   stayId:       string;
@@ -139,31 +140,22 @@ export default function EventFormModal({
           {isMultiday ? (
             <>
               <div className="org-field-row">
-                <div className="org-field">
-                  <label htmlFor="evt-date">Date de début *</label>
-                  <input
-                    id="evt-date"
-                    type="date"
-                    value={values.event_date}
-                    min={stayStart}
-                    max={stayEnd}
-                    onChange={e => set('event_date', e.target.value)}
-                  />
-                </div>
-                <div className="org-field">
-                  <label htmlFor="evt-end-date">
-                    Date de fin
-                    <span className="org-field-hint"> (optionnel)</span>
-                  </label>
-                  <input
-                    id="evt-end-date"
-                    type="date"
-                    value={values.end_date}
-                    min={values.event_date || stayStart}
-                    max={stayEnd}
-                    onChange={e => set('end_date', e.target.value)}
-                  />
-                </div>
+                <StayDatePicker
+                  label="Date de début *"
+                  value={values.event_date || null}
+                  onChange={v => set('event_date', v ?? '')}
+                  stayStartDate={stayStart}
+                  stayEndDate={stayEnd}
+                  allowClear={false}
+                />
+                <StayDatePicker
+                  label="Date de fin"
+                  value={values.end_date || null}
+                  onChange={v => set('end_date', v ?? '')}
+                  stayStartDate={stayStart}
+                  stayEndDate={stayEnd}
+                  allowClear
+                />
               </div>
               {values.end_date && values.end_date !== values.event_date && (
                 <div className="org-multiday-badge">
@@ -172,17 +164,14 @@ export default function EventFormModal({
               )}
             </>
           ) : (
-            <div className="org-field">
-              <label htmlFor="evt-date">Date *</label>
-              <input
-                id="evt-date"
-                type="date"
-                value={values.event_date}
-                min={stayStart}
-                max={stayEnd}
-                onChange={e => set('event_date', e.target.value)}
-              />
-            </div>
+            <StayDatePicker
+            label="Date *"
+            value={values.event_date || null}
+            onChange={v => set('event_date', v ?? '')}
+            stayStartDate={stayStart}
+            stayEndDate={stayEnd}
+            allowClear={false}
+          />
           )}
 
           {/* Heures */}

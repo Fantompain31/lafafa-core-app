@@ -44,7 +44,6 @@ type FoodAlert = {
 
 type Props = {
   stay: MyStay
-  score: number
   myGuest: GuestSummary | null
   participants: GuestSummary[]
   myRole: MemberRole
@@ -109,7 +108,6 @@ const LOGISTICS_ICONS: Record<string, string> = {
 
 export function StayHome({
   stay,
-  score,
   myGuest,
   participants,
   myRole,
@@ -119,7 +117,6 @@ export function StayHome({
 }: Props) {
   const router = useRouter()
   const isOrganizer = myRole === 'owner' || myRole === 'co_organizer'
-  const safeScore = Math.max(0, Math.min(100, Math.round(score)))
   const confirmed = participants.filter(p => p.status === 'confirmed')
   const total = participants.length
 
@@ -201,18 +198,6 @@ export function StayHome({
           )}
         </div>
       </div>
-
-      {isOrganizer && (
-        <div className="sh-score">
-          <div className="sh-score-row">
-            <span className="sh-score-label">Préparation</span>
-            <span className="sh-score-value">{safeScore}%</span>
-          </div>
-          <div className="sh-score-bar">
-            <div className="sh-score-fill" style={{ width: `${safeScore}%` }} />
-          </div>
-        </div>
-      )}
 
       <div className="sh-grid">
         <div className="sh-main-stack">

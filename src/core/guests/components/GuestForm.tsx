@@ -1,8 +1,10 @@
 'use client'
+// src/core/guests/components/GuestForm.tsx
 
 import { useState } from 'react'
 import { guestsService } from '@/core/guests/services/guests.service'
 import { STAY_COLOR_OPTIONS } from '@/shared/constants/colors'
+import { StayDatePicker } from '@/shared/components/StayDatePicker'
 import type {
   FoodPreferences,
   GuestCategory,
@@ -13,6 +15,8 @@ import { utcIsoToDateTimeLocal } from '@/shared/utils/dates'
 
 type Props = {
   stayId: string
+  stayStartDate?: string | null   // "YYYY-MM-DD" — pour surbrillance calendrier
+  stayEndDate?: string | null     // "YYYY-MM-DD"
   guest?: GuestSummary
   linkedUserId?: string
   onSuccess?: () => void
@@ -38,8 +42,23 @@ function readFoodPreferences(value: GuestSummary['food_preferences'] | undefined
   return value as FoodPreferences
 }
 
+// Découpe un datetime-local ("2025-08-15T14:30") en { date, time }
+function splitDateTimeLocal(dtl: string): { date: string; time: string } {
+  if (!dtl) return { date: '', time: '' }
+  const [date, time = ''] = dtl.split('T')
+  return { date, time: time.slice(0, 5) } // "HH:MM"
+}
+
+// Recombine date + time en datetime-local
+function joinDateTimeLocal(date: string, time: string): string {
+  if (!date) return ''
+  return time ? `${date}T${time}` : `${date}T00:00`
+}
+
 export function GuestForm({
   stayId,
+  stayStartDate = null,
+  stayEndDate   = null,
   guest,
   linkedUserId,
   onSuccess,
@@ -49,17 +68,28 @@ export function GuestForm({
   const foodPrefs = readFoodPreferences(guest?.food_preferences)
 
   const [firstName, setFirstName] = useState(guest?.first_name ?? '')
-  const [lastName, setLastName] = useState(guest?.last_name ?? '')
-  const [category, setCategory] = useState<GuestCategory>(guest?.category ?? 'adult')
-  const [status, setStatus] = useState<GuestStatus>(guest?.status ?? (linkedUserId ? 'confirmed' : 'invited'))
-  const [color, setColor] = useState(guest?.color ?? STAY_COLOR_OPTIONS[0].value)
-  const [arrivalAt, setArrivalAt] = useState(utcIsoToDateTimeLocal(guest?.arrival_at))
-  const [departureAt, setDepartureAt] = useState(utcIsoToDateTimeLocal(guest?.departure_at))
-  const [diet, setDiet] = useState(foodPrefs.diet ?? '')
-  const [allergies, setAllergies] = useState(foodPrefs.allergies?.join(', ') ?? '')
-  const [notes, setNotes] = useState(guest?.notes ?? '')
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [lastName,  setLastName]  = useState(guest?.last_name  ?? '')
+  const [category,  setCategory]  = useState<GuestCategory>(guest?.category ?? 'adult')
+  const [status,    setStatus]    = useState<GuestStatus>(guest?.status ?? (linkedUserId ? 'confirmed' : 'invited'))
+  const [color,     setColor]     = useState(guest?.color ?? STAY_COLOR_OPTIONS[0].value)
+
+  // On split le datetime-local en date + time séparés
+  const initialArrival   = utcIsoToDateTimeLocal(guest?.arrival_at)
+  const initialDeparture = utcIsoToDateTimeLocal(guest?.departure_at)
+  const [arrivalDate,    setArrivalDate]    = useState(splitDateTimeLocal(initialArrival).date)
+  const [arrivalTime,    setArrivalTime]    = useState(splitDateTimeLocal(initialArrival).time)
+  const [departureDate,  setDepartureDate]  = useState(splitDateTimeLocal(initialDeparture).date)
+  const [departureTime,  setDepartureTime]  = useState(splitDateTimeLocal(initialDeparture).time)
+
+  const [diet,       setDiet]      = useState(foodPrefs.diet ?? '')
+  const [allergies,  setAllergies] = useState(foodPrefs.allergies?.join(', ') ?? '')
+  const [notes,      setNotes]     = useState(guest?.notes ?? '')
+  const [error,      setError]     = useState<string | null>(null)
+  const [loading,    setLoading]   = useState(false)
+
+  // Recombine date + time → datetime-local string ou null
+  const arrivalAt   = arrivalDate   ? joinDateTimeLocal(arrivalDate, arrivalTime)   : null
+  const departureAt = departureDate ? joinDateTimeLocal(departureDate, departureTime) : null
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -68,10 +98,7 @@ export function GuestForm({
 
     const foodPreferences: FoodPreferences = {
       diet: diet.trim() || undefined,
-      allergies: allergies
-        .split(',')
-        .map((a) => a.trim())
-        .filter(Boolean),
+      allergies: allergies.split(',').map(a => a.trim()).filter(Boolean),
     }
 
     try {
@@ -82,8 +109,8 @@ export function GuestForm({
           category,
           status,
           color,
-          arrivalAt: arrivalAt || null,
-          departureAt: departureAt || null,
+          arrivalAt,
+          departureAt,
           foodPreferences,
           notes,
         })
@@ -94,14 +121,13 @@ export function GuestForm({
           category,
           status,
           color,
-          arrivalAt: arrivalAt || null,
-          departureAt: departureAt || null,
+          arrivalAt,
+          departureAt,
           foodPreferences,
           notes,
           linkedUserId: linkedUserId ?? null,
         })
       }
-
       onSuccess?.()
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Erreur')
@@ -120,51 +146,22 @@ export function GuestForm({
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Prénom *">
-          <input
-            required
-            value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
-            placeholder="Alice"
-            className="input"
-          />
+          <input required value={firstName} onChange={e => setFirstName(e.target.value)} placeholder="Alice" className="input" />
         </Field>
-
         <Field label="Nom">
-          <input
-            value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
-            placeholder="Dupont"
-            className="input"
-          />
+          <input value={lastName} onChange={e => setLastName(e.target.value)} placeholder="Dupont" className="input" />
         </Field>
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <Field label="Catégorie">
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value as GuestCategory)}
-            className="input bg-white"
-          >
-            {CATEGORIES.map((c) => (
-              <option key={c.value} value={c.value}>
-                {c.label}
-              </option>
-            ))}
+          <select value={category} onChange={e => setCategory(e.target.value as GuestCategory)} className="input bg-white">
+            {CATEGORIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
           </select>
         </Field>
-
         <Field label="Statut">
-          <select
-            value={status}
-            onChange={(e) => setStatus(e.target.value as GuestStatus)}
-            className="input bg-white"
-          >
-            {STATUSES.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
+          <select value={status} onChange={e => setStatus(e.target.value as GuestStatus)} className="input bg-white">
+            {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </Field>
       </div>
@@ -172,92 +169,87 @@ export function GuestForm({
       <div className="flex flex-col gap-1.5">
         <label className="text-xs font-medium text-neutral-600">Couleur</label>
         <div className="flex flex-wrap gap-2">
-          {STAY_COLOR_OPTIONS.map((c) => (
-            <button
-              key={c.id}
-              type="button"
-              onClick={() => setColor(c.value)}
-              title={c.label}
+          {STAY_COLOR_OPTIONS.map(c => (
+            <button key={c.id} type="button" onClick={() => setColor(c.value)} title={c.label}
               className="h-7 w-7 rounded-full transition-transform hover:scale-110"
-              style={{
-                backgroundColor: c.value,
-                outline: color === c.value ? `2px solid ${c.value}` : 'none',
-                outlineOffset: '2px',
-              }}
+              style={{ backgroundColor: c.value, outline: color === c.value ? `2px solid ${c.value}` : 'none', outlineOffset: '2px' }}
             />
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Field label="Arrivée">
-          <input
-            type="datetime-local"
-            value={arrivalAt}
-            onChange={(e) => setArrivalAt(e.target.value)}
-            className="input"
+      {/* ── Arrivée ── */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-neutral-600">Arrivée</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StayDatePicker
+            value={arrivalDate || null}
+            onChange={v => { setArrivalDate(v ?? ''); if (!v) setArrivalTime('') }}
+            stayStartDate={stayStartDate}
+            stayEndDate={stayEndDate}
+            placeholder="Date d'arrivée"
+            allowClear
           />
-        </Field>
+          <Field label="">
+            <input
+              type="time"
+              value={arrivalTime}
+              onChange={e => setArrivalTime(e.target.value)}
+              className="input"
+              placeholder="Heure"
+              disabled={!arrivalDate}
+            />
+          </Field>
+        </div>
+      </div>
 
-        <Field label="Départ">
-          <input
-            type="datetime-local"
-            value={departureAt}
-            min={arrivalAt}
-            onChange={(e) => setDepartureAt(e.target.value)}
-            className="input"
+      {/* ── Départ ── */}
+      <div className="flex flex-col gap-1.5">
+        <span className="text-xs font-medium text-neutral-600">Départ</span>
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+          <StayDatePicker
+            value={departureDate || null}
+            onChange={v => { setDepartureDate(v ?? ''); if (!v) setDepartureTime('') }}
+            stayStartDate={stayStartDate}
+            stayEndDate={stayEndDate}
+            placeholder="Date de départ"
+            allowClear
           />
-        </Field>
+          <Field label="">
+            <input
+              type="time"
+              value={departureTime}
+              onChange={e => setDepartureTime(e.target.value)}
+              className="input"
+              placeholder="Heure"
+              disabled={!departureDate}
+            />
+          </Field>
+        </div>
       </div>
 
       <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3">
         <p className="text-xs font-medium text-neutral-600">Alimentation</p>
-
         <Field label="Régime">
-          <input
-            value={diet}
-            onChange={(e) => setDiet(e.target.value)}
-            placeholder="végétarien, vegan, halal…"
-            className="input bg-white"
-          />
+          <input value={diet} onChange={e => setDiet(e.target.value)} placeholder="végétarien, vegan, halal…" className="input bg-white" />
         </Field>
-
         <Field label="Allergies séparées par des virgules">
-          <input
-            value={allergies}
-            onChange={(e) => setAllergies(e.target.value)}
-            placeholder="gluten, lactose, arachides…"
-            className="input bg-white"
-          />
+          <input value={allergies} onChange={e => setAllergies(e.target.value)} placeholder="gluten, lactose, arachides…" className="input bg-white" />
         </Field>
       </div>
 
       <Field label="Notes">
-        <textarea
-          rows={2}
-          value={notes}
-          onChange={(e) => setNotes(e.target.value)}
-          placeholder="Informations complémentaires…"
-          className="input resize-none"
-        />
+        <textarea rows={2} value={notes} onChange={e => setNotes(e.target.value)} placeholder="Informations complémentaires…" className="input resize-none" />
       </Field>
 
       <div className="flex gap-3 pt-1">
         {onCancel && (
-          <button
-            type="button"
-            onClick={onCancel}
-            className="flex-1 rounded-lg border border-neutral-200 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50"
-          >
+          <button type="button" onClick={onCancel} className="flex-1 rounded-lg border border-neutral-200 py-2.5 text-sm text-neutral-600 hover:bg-neutral-50">
             Annuler
           </button>
         )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="flex-1 rounded-lg bg-[var(--stay-primary)] py-2.5 text-sm font-medium text-[var(--stay-primary-text)] hover:opacity-90 disabled:opacity-50"
-        >
+        <button type="submit" disabled={loading}
+          className="flex-1 rounded-lg bg-[var(--stay-primary)] py-2.5 text-sm font-medium text-[var(--stay-primary-text)] hover:opacity-90 disabled:opacity-50">
           {loading ? 'Enregistrement…' : isEditing ? 'Enregistrer' : 'Ajouter'}
         </button>
       </div>
@@ -265,16 +257,10 @@ export function GuestForm({
   )
 }
 
-function Field({
-  label,
-  children,
-}: {
-  label: string
-  children: React.ReactNode
-}) {
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-xs font-medium text-neutral-600">{label}</label>
+      {label && <label className="text-xs font-medium text-neutral-600">{label}</label>}
       {children}
     </div>
   )

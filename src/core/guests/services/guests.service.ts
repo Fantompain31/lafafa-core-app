@@ -4,6 +4,7 @@ import { dateTimeLocalToUtcIso } from '@/shared/utils/dates'
 import { emptyToNull, omitUndefined } from '@/shared/utils/object'
 import { assertDateTimeRange, requireNonEmpty } from '@/shared/utils/validation'
 import { syncGuestArrivalToOrganisation } from '@/core/integrations/guest-arrival.sync'
+import { syncGuestDepartureToOrganisation } from '@/core/integrations/guest-departure.sync'
 
 type GuestPayload = {
   firstName: string
@@ -18,11 +19,25 @@ type GuestPayload = {
   linkedUserId?: string | null
 }
 
+// Convertit une valeur datetime-local de manière sûre :
+// - undefined → undefined (ne pas modifier le champ)
+// - null ou '' → null (effacer en base)
+// - string non vide → convertir en ISO UTC
+function safeDateTimeToIso(value: string | null | undefined): string | null | undefined {
+  if (value === undefined) return undefined
+  if (value === null || value === '') return null
+  return dateTimeLocalToUtcIso(value)
+}
+
 function normalizeGuestPayload(payload: GuestPayload) {
-  const firstName = requireNonEmpty(payload.firstName, 'Prénom')
-  const arrivalIso = payload.arrivalAt ? dateTimeLocalToUtcIso(payload.arrivalAt) : null
-  const departureIso = payload.departureAt ? dateTimeLocalToUtcIso(payload.departureAt) : null
-  assertDateTimeRange(arrivalIso, departureIso)
+  const firstName    = requireNonEmpty(payload.firstName, 'Prénom')
+  const arrivalIso   = safeDateTimeToIso(payload.arrivalAt)
+  const departureIso = safeDateTimeToIso(payload.departureAt)
+
+  // assertDateTimeRange uniquement si les deux sont des strings non-null
+  if (arrivalIso && departureIso) {
+    assertDateTimeRange(arrivalIso, departureIso)
+  }
 
   return {
     first_name:       firstName,
@@ -30,8 +45,8 @@ function normalizeGuestPayload(payload: GuestPayload) {
     category:         payload.category,
     status:           payload.status,
     color:            payload.color === undefined ? undefined : emptyToNull(payload.color ?? ''),
-    arrival_at:       payload.arrivalAt === undefined ? undefined : arrivalIso,
-    departure_at:     payload.departureAt === undefined ? undefined : departureIso,
+    arrival_at:       arrivalIso,
+    departure_at:     departureIso,
     food_preferences: payload.foodPreferences,
     notes:            payload.notes === undefined ? undefined : emptyToNull(payload.notes ?? ''),
   }
@@ -79,17 +94,16 @@ export const guestsService = {
       })
       if (error) throw new Error(error.message)
 
-      if (normalized.arrival_at) {
-        await syncGuestArrivalToOrganisation({
-          guestId:   data as string,
-          stayId,
-          firstName: payload.firstName,
-          lastName:  payload.lastName,
-          arrivalAt: normalized.arrival_at,
-        })
-      }
-
-      return { id: data as string }
+      const newId = data as string
+      await Promise.all([
+        normalized.arrival_at
+          ? syncGuestArrivalToOrganisation({ guestId: newId, stayId, firstName: payload.firstName, lastName: payload.lastName, arrivalAt: normalized.arrival_at })
+          : Promise.resolve(),
+        normalized.departure_at
+          ? syncGuestDepartureToOrganisation({ guestId: newId, stayId, firstName: payload.firstName, lastName: payload.lastName, departureAt: normalized.departure_at })
+          : Promise.resolve(),
+      ])
+      return { id: newId }
     }
 
     const { data, error } = await supabase
@@ -110,35 +124,46 @@ export const guestsService = {
       .single()
     if (error) throw new Error(error.message)
 
-    if (normalized.arrival_at) {
-      await syncGuestArrivalToOrganisation({
-        guestId:   (data as { id: string }).id,
-        stayId,
-        firstName: payload.firstName,
-        lastName:  payload.lastName,
-        arrivalAt: normalized.arrival_at,
-      })
-    }
-
+    const newId = (data as { id: string }).id
+    await Promise.all([
+      normalized.arrival_at
+        ? syncGuestArrivalToOrganisation({ guestId: newId, stayId, firstName: payload.firstName, lastName: payload.lastName, arrivalAt: normalized.arrival_at })
+        : Promise.resolve(),
+      normalized.departure_at
+        ? syncGuestDepartureToOrganisation({ guestId: newId, stayId, firstName: payload.firstName, lastName: payload.lastName, departureAt: normalized.departure_at })
+        : Promise.resolve(),
+    ])
     return data as { id: string }
   },
 
   async updateGuest(guestId: string, payload: Partial<GuestPayload>) {
     const supabase = createClient()
-    const normalized = payload.firstName !== undefined
-      ? normalizeGuestPayload(payload as GuestPayload)
-      : {
-          last_name:        payload.lastName === undefined ? undefined : emptyToNull(payload.lastName ?? ''),
-          category:         payload.category,
-          status:           payload.status,
-          color:            payload.color === undefined ? undefined : emptyToNull(payload.color ?? ''),
-          arrival_at:       payload.arrivalAt === undefined ? undefined : dateTimeLocalToUtcIso(payload.arrivalAt ?? ''),
-          departure_at:     payload.departureAt === undefined ? undefined : dateTimeLocalToUtcIso(payload.departureAt ?? ''),
-          food_preferences: payload.foodPreferences,
-          notes:            payload.notes === undefined ? undefined : emptyToNull(payload.notes ?? ''),
-        }
 
-    assertDateTimeRange(normalized.arrival_at, normalized.departure_at)
+    // Normalisation partielle — on n'utilise safeDateTimeToIso pour chaque champ date
+    const normalized: Record<string, unknown> = {}
+
+    if (payload.firstName !== undefined) normalized.first_name = requireNonEmpty(payload.firstName, 'Prénom')
+    if (payload.lastName  !== undefined) normalized.last_name  = emptyToNull(payload.lastName ?? '')
+    if (payload.category  !== undefined) normalized.category   = payload.category
+    if (payload.status    !== undefined) normalized.status     = payload.status
+    if (payload.color     !== undefined) normalized.color      = emptyToNull(payload.color ?? '')
+    if (payload.foodPreferences !== undefined) normalized.food_preferences = payload.foodPreferences
+    if (payload.notes     !== undefined) normalized.notes      = emptyToNull(payload.notes ?? '')
+
+    // Dates : safe conversion
+    if (payload.arrivalAt !== undefined) {
+      normalized.arrival_at = safeDateTimeToIso(payload.arrivalAt)
+    }
+    if (payload.departureAt !== undefined) {
+      normalized.departure_at = safeDateTimeToIso(payload.departureAt)
+    }
+
+    // Validation intervalle uniquement si les deux sont présentes et non-null
+    const arrIso  = normalized.arrival_at   as string | null | undefined
+    const depIso  = normalized.departure_at as string | null | undefined
+    if (arrIso && depIso) {
+      assertDateTimeRange(arrIso, depIso)
+    }
 
     const { error } = await supabase
       .from('guests')
@@ -146,25 +171,27 @@ export const guestsService = {
       .eq('id', guestId)
     if (error) throw new Error(error.message)
 
-    // Sync si arrival_at, prénom ou nom sont touchés
-    if (payload.arrivalAt !== undefined || payload.firstName !== undefined || payload.lastName !== undefined) {
+    // Sync Planning si dates ou nom touchés
+    const touchesArrival   = payload.arrivalAt   !== undefined || payload.firstName !== undefined || payload.lastName !== undefined
+    const touchesDeparture = payload.departureAt !== undefined || payload.firstName !== undefined || payload.lastName !== undefined
+
+    if (touchesArrival || touchesDeparture) {
       const guest = await this.getGuestById(guestId)
       if (guest) {
-        await syncGuestArrivalToOrganisation({
-          guestId,
-          stayId:    guest.stay_id,
-          firstName: guest.first_name,
-          lastName:  guest.last_name ?? null,
-          arrivalAt: guest.arrival_at ?? null,
-        })
+        await Promise.all([
+          touchesArrival
+            ? syncGuestArrivalToOrganisation({ guestId, stayId: guest.stay_id, firstName: guest.first_name, lastName: guest.last_name ?? null, arrivalAt: guest.arrival_at ?? null })
+            : Promise.resolve(),
+          touchesDeparture
+            ? syncGuestDepartureToOrganisation({ guestId, stayId: guest.stay_id, firstName: guest.first_name, lastName: guest.last_name ?? null, departureAt: guest.departure_at ?? null })
+            : Promise.resolve(),
+        ])
       }
     }
   },
 
   async cancelGuest(guestId: string) {
     const supabase = createClient()
-
-    // Récupérer le guest avant d'annuler pour avoir stay_id et le nom
     const guest = await this.getGuestById(guestId)
 
     const { error } = await supabase
@@ -173,15 +200,23 @@ export const guestsService = {
       .eq('id', guestId)
     if (error) throw new Error(error.message)
 
-    // Supprimer l'événement d'arrivée automatique s'il existe
     if (guest) {
-      await syncGuestArrivalToOrganisation({
-        guestId,
-        stayId:    guest.stay_id,
-        firstName: guest.first_name,
-        lastName:  guest.last_name ?? null,
-        arrivalAt: null,   // null = la RPC supprime l'événement lié
-      })
+      await Promise.all([
+        syncGuestArrivalToOrganisation({ guestId, stayId: guest.stay_id, firstName: guest.first_name, lastName: guest.last_name ?? null, arrivalAt: null }),
+        syncGuestDepartureToOrganisation({ guestId, stayId: guest.stay_id, firstName: guest.first_name, lastName: guest.last_name ?? null, departureAt: null }),
+      ])
     }
+  },
+
+  async removeGuest(guestId: string) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('remove_guest_from_stay', { p_guest_id: guestId })
+    if (error) throw new Error(error.message)
+  },
+
+  async leaveStay(stayId: string) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('leave_stay', { p_stay_id: stayId })
+    if (error) throw new Error(error.message)
   },
 }

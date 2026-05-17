@@ -44,15 +44,12 @@ export default async function StayPage({ params }: Props) {
   const today = new Date().toISOString().slice(0, 10)
 
   const [
-    scoreResult,
     myGuestResult,
     participantsResult,
     eventsResult,
     sectionsResult,
     itemsResult,
   ] = await Promise.all([
-    supabase.rpc('get_preparation_score', { p_stay_id: params.stayId }),
-
     supabase
       .from('guests_summary')
       .select('*')
@@ -93,7 +90,6 @@ export default async function StayPage({ params }: Props) {
       .eq('stay_id', params.stayId),
   ])
 
-  const score = typeof scoreResult.data === 'number' ? scoreResult.data : 0
   const myGuest = (myGuestResult.data ?? null) as GuestSummary | null
   const participants = (participantsResult.data ?? []) as GuestSummary[]
   const programEvents = (eventsResult.data ?? []) as StayHomeEvent[]
@@ -104,7 +100,6 @@ export default async function StayPage({ params }: Props) {
     <StayLayout stay={typedStay}>
       <StayHome
         stay={typedStay}
-        score={score}
         myGuest={myGuest}
         participants={participants}
         myRole={typedStay.my_role}

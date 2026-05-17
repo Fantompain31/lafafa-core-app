@@ -8,10 +8,12 @@ type Props = {
   onInvite?: (guest: GuestSummary) => void
   onCopyLink?: (guest: GuestSummary) => void
   onRevoke?: (guest: GuestSummary) => void
+  onRemove?: (guest: GuestSummary) => void
   isOrganizer?: boolean
+  isOwner?: boolean
 }
 
-export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, isOrganizer }: Props) {
+export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, isOrganizer, isOwner }: Props) {
   const initials = [guest.first_name[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase()
   const isLinked = guest.linked_user_id !== null
   const hasActiveInvitation = guest.active_invitation_id !== null || guest.active_link_id !== null
@@ -98,6 +100,22 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, isOr
             {guest.departure_at && <p>Départ : {formatDateTime(guest.departure_at)}</p>}
           </div>
         )}
+
+        {/* Bouton supprimer — owner uniquement */}
+        {isOwner && onRemove && (
+          <div className="mt-3 border-t border-neutral-100 pt-3" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onRemove(guest)}
+              className="flex items-center gap-1.5 rounded-lg border border-red-200 px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 transition-colors"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+              </svg>
+              Supprimer du séjour
+            </button>
+          </div>
+        )}
       </div>
     </>
   )
@@ -106,9 +124,20 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, isOr
 
   if (onClick) {
     return (
-      <button type="button" onClick={onClick} className={`${className} hover:border-neutral-300 hover:shadow-sm`}>
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={onClick}
+        onKeyDown={e => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            onClick()
+          }
+        }}
+        className={`${className} cursor-pointer hover:border-neutral-300 hover:shadow-sm focus:outline-none focus:ring-2 focus:ring-[var(--stay-primary)] focus:ring-offset-2`}
+      >
         {content}
-      </button>
+      </div>
     )
   }
 
