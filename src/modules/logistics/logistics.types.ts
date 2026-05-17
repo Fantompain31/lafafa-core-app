@@ -121,3 +121,10 @@ export const MANUAL_SECTION_TYPES: LogisticsSectionType[] = [
   'activite',
   'autre',
 ];
+
+
+export function getLogisticsItemStatusLabel(item: LogisticsItem): 'À prévoir' | 'Je m’en occupe' | 'Terminé' {
+  if (item.is_checked) return 'Terminé';
+  if (item.assigned_guest_id) return 'Je m’en occupe';
+  return 'À prévoir';
+}

@@ -46,6 +46,15 @@ export type StayHomeLogisticsItem = {
   assigned_guest_id: string | null;
 };
 
+export type StayHomePracticalInfo = {
+  id: string;
+  stay_id: string;
+  label: string;
+  value: string | null;
+  kind: string;
+  position: number;
+};
+
 type FoodAlert = {
   guestId: string;
   name: string;
@@ -60,6 +69,7 @@ type Props = {
   programEvents?: StayHomeEvent[];
   logisticsSections?: StayHomeLogisticsSection[];
   logisticsItems?: StayHomeLogisticsItem[];
+  practicalInfos?: StayHomePracticalInfo[];
 };
 
 const EVENT_LABELS: Record<string, string> = {
@@ -124,6 +134,7 @@ export function StayHome({
   programEvents = [],
   logisticsSections = [],
   logisticsItems = [],
+  practicalInfos = [],
 }: Props) {
   const router = useRouter();
   const isOrganizer = myRole === "owner" || myRole === "co_organizer";
@@ -399,6 +410,38 @@ export function StayHome({
       .toUpperCase();
   }
 
+  async function handleToggleResponsibilityItem(itemId: string, nextChecked: boolean) {
+    const supabase = createClient();
+    const { error } = await supabase
+      .from("logistics_items")
+      .update({
+        is_checked: nextChecked,
+        checked_at: nextChecked ? new Date().toISOString() : null,
+      })
+      .eq("id", itemId);
+
+    if (error) {
+      setMyResponsibilitiesError(error.message);
+      return;
+    }
+
+    setMyResponsibilities((current) => {
+      if (!current) return current;
+      return {
+        ...current,
+        logistics: current.logistics.map((item) =>
+          item.id === itemId
+            ? {
+                ...item,
+                is_done: nextChecked,
+                status: nextChecked ? "Terminé" : item.assigned_guest_id ? "Je m’en occupe" : "À prévoir",
+              }
+            : item,
+        ),
+      };
+    });
+  }
+
   return (
     <div className="sh">
       <div className="sh-hero">
@@ -577,6 +620,7 @@ export function StayHome({
                 isOpen={responsibilitiesModalOpen}
                 onOpen={() => setResponsibilitiesModalOpen(true)}
                 onClose={() => setResponsibilitiesModalOpen(false)}
+                onToggleLogisticsItem={handleToggleResponsibilityItem}
               />
             )}
           </div>
@@ -593,6 +637,11 @@ export function StayHome({
             remainingItems={remainingLogisticsItems}
             unassignedItems={unassignedLogisticsItems}
             onOpen={() => router.push(`/stays/${stay.id}/logistique`)}
+          />
+
+          <DashboardPracticalInfoCard
+            infos={practicalInfos}
+            onOpen={() => router.push(`/stays/${stay.id}/infos`)}
           />
 
           <PlaceholderCard
@@ -686,14 +735,6 @@ export function StayHome({
             <div className="sh-card">
               <p className="sh-section-label">Informations</p>
               <InfoRow
-                label="Alertes"
-                value={
-                  stay.open_alerts_count > 0
-                    ? `${stay.open_alerts_count} ouverte(s)`
-                    : "Aucune alerte"
-                }
-              />
-              <InfoRow
                 label="Membres actifs"
                 value={`${stay.active_member_count}`}
               />
@@ -712,6 +753,7 @@ type HomeResponsibilityRow = {
   title: string;
   subtitle?: string | null;
   status?: string | null;
+  is_done?: boolean;
   group: string;
   icon: string;
 };
@@ -723,6 +765,7 @@ function HomeResponsibilitiesCard({
   isOpen,
   onOpen,
   onClose,
+  onToggleLogisticsItem,
 }: {
   responsibilities: GuestResponsibilities | null;
   loading: boolean;
@@ -730,6 +773,7 @@ function HomeResponsibilitiesCard({
   isOpen: boolean;
   onOpen: () => void;
   onClose: () => void;
+  onToggleLogisticsItem?: (itemId: string, nextChecked: boolean) => Promise<void>;
 }) {
   const rows: HomeResponsibilityRow[] = responsibilities
     ? [
@@ -804,7 +848,7 @@ function HomeResponsibilitiesCard({
       )}
 
       {isOpen && rows.length > 0 && (
-        <ResponsibilitiesDetailModal rows={rows} onClose={onClose} />
+        <ResponsibilitiesDetailModal rows={rows} onClose={onClose} onToggleLogisticsItem={onToggleLogisticsItem} />
       )}
     </div>
   );
@@ -813,9 +857,11 @@ function HomeResponsibilitiesCard({
 function ResponsibilitiesDetailModal({
   rows,
   onClose,
+  onToggleLogisticsItem,
 }: {
   rows: HomeResponsibilityRow[];
   onClose: () => void;
+  onToggleLogisticsItem?: (itemId: string, nextChecked: boolean) => Promise<void>;
 }) {
   const groups = ["Logistique", "Couchage", "Planning"]
     .map((group) => ({
@@ -844,7 +890,18 @@ function ResponsibilitiesDetailModal({
               <div className="sh-modal-list">
                 {items.map((item) => (
                   <div key={`${item.type}-${item.id}`} className="sh-modal-row">
-                    <span className="sh-responsibility-icon">{item.icon}</span>
+                    {item.type === "logistics_item" && onToggleLogisticsItem ? (
+                      <button
+                        type="button"
+                        className={`sh-recap-check${item.is_done ? " checked" : ""}`}
+                        onClick={() => void onToggleLogisticsItem(item.id, !item.is_done)}
+                        aria-label={item.is_done ? "Repasser à prévoir" : "Marquer terminé"}
+                      >
+                        {item.is_done ? "✓" : ""}
+                      </button>
+                    ) : (
+                      <span className="sh-responsibility-icon">{item.icon}</span>
+                    )}
                     <span className="sh-responsibility-body">
                       <span className="sh-responsibility-title">{item.title}</span>
                       {item.subtitle && (
@@ -861,6 +918,45 @@ function ResponsibilitiesDetailModal({
           ))}
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function DashboardPracticalInfoCard({
+  infos,
+  onOpen,
+}: {
+  infos: StayHomePracticalInfo[];
+  onOpen: () => void;
+}) {
+  const preview = infos.filter((info) => info.value).slice(0, 3);
+
+  return (
+    <div className="sh-dashboard-card">
+      <div className="sh-dashboard-header">
+        <div className="sh-dashboard-title-row">
+          <div className="sh-placeholder-icon">ℹ️</div>
+          <div>
+            <p className="sh-section-label">Infos pratiques</p>
+            <h2>Adresse, Wi-Fi, consignes</h2>
+          </div>
+        </div>
+        <button className="sh-btn-outline" onClick={onOpen}>Voir</button>
+      </div>
+      {preview.length === 0 ? (
+        <p className="sh-empty-hint">Aucune info pratique renseignée.</p>
+      ) : (
+        <div className="sh-mini-list">
+          {preview.map((info) => (
+            <button key={info.id} type="button" className="sh-mini-row" onClick={onOpen}>
+              <span className="sh-mini-dot" />
+              <span className="sh-mini-time">{info.label}</span>
+              <span className="sh-mini-title">{info.value}</span>
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

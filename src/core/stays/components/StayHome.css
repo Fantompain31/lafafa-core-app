@@ -723,3 +723,10 @@
     z-index: 1;
   }
 }
+
+
+/* Récap interactif accueil */
+.sh-recap-check { width: 28px; height: 28px; border-radius: 999px; border: 1px solid rgba(196,168,130,.45); background:#fff; color:#fff; font-weight:900; cursor:pointer; flex:0 0 auto; }
+.sh-recap-check.checked { background: var(--stay-primary, #C4A882); border-color: var(--stay-primary, #C4A882); }
+.sh-recap-check:hover { transform: scale(1.04); }
+.sh-responsibility-status { white-space: nowrap; }

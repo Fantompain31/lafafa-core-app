@@ -517,3 +517,7 @@
     top: calc(100% + 8px);
   }
 }
+
+
+.stay-alert-action { margin-left:auto; border: .5px solid rgba(196,168,130,.35); border-radius: 999px; padding: .3rem .55rem; font-size: .72rem; font-weight: 800; color: #7a6044; background:#fffaf3; text-decoration:none; white-space:nowrap; }
+.stay-alert-row { align-items:center; }

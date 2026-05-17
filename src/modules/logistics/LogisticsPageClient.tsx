@@ -42,7 +42,7 @@ interface Props {
 
 type FilterKey = "all" | LogisticsSectionType;
 type StatusFilterKey = "all" | "mine" | "unassigned" | "todo" | "done";
-type ViewMode = "sections" | "list";
+type ViewMode = "sections" | "list" | "people";
 
 const FILTERS: FilterKey[] = [
   "all",
@@ -65,7 +65,7 @@ const STATUS_FILTERS: Array<{
   { key: "all", label: "Tout", icon: "✨" },
   { key: "mine", label: "À moi", icon: "🙋" },
   { key: "unassigned", label: "Non attribué", icon: "⚠️" },
-  { key: "todo", label: "À finir", icon: "⏳" },
+  { key: "todo", label: "À prévoir", icon: "⏳" },
   { key: "done", label: "Terminé", icon: "✅" },
 ];
 
@@ -524,6 +524,63 @@ export default function LogisticsPageClient({
       sections.some((section) => section.section_type === filter),
   );
 
+  const itemsByPerson = useMemo(() => {
+    const rows = sections.flatMap((section) =>
+      section.items.map((item) => ({ section, item })),
+    );
+
+    const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
+    const groups = new Map<string, { label: string; items: typeof rows }>();
+
+    for (const row of rows) {
+      const guest = row.item.assigned_guest_id
+        ? guestMap.get(row.item.assigned_guest_id)
+        : null;
+      const key = guest?.id ?? "unassigned";
+      const label = guest
+        ? `${guest.first_name}${guest.last_name ? ` ${guest.last_name}` : ""}`
+        : "Non attribué";
+
+      if (!groups.has(key)) groups.set(key, { label, items: [] });
+      groups.get(key)!.items.push(row);
+    }
+
+    return Array.from(groups.entries())
+      .map(([key, value]) => ({ key, ...value }))
+      .sort((a, b) => (a.key === "unassigned" ? 1 : b.key === "unassigned" ? -1 : a.label.localeCompare(b.label)));
+  }, [guests, sections]);
+
+  function buildShareSummary() {
+    const lines = [`Résumé logistique du séjour`, ""];
+
+    for (const group of itemsByPerson) {
+      lines.push(`${group.label} :`);
+      const activeItems = group.items.filter(({ item }) => !item.is_checked);
+      if (activeItems.length === 0) {
+        lines.push("- Rien à prévoir");
+      } else {
+        activeItems.forEach(({ section, item }) => {
+          lines.push(`- ${item.label}${item.quantity ? ` · ${item.quantity}` : ""} (${section.title})`);
+        });
+      }
+      lines.push("");
+    }
+
+    lines.push(`${window.location.origin}/stays/${stayId}`);
+    return lines.join("\n");
+  }
+
+  async function handleCopyShareSummary() {
+    await navigator.clipboard.writeText(buildShareSummary());
+    setPageError("Résumé copié. Vous pouvez le coller dans WhatsApp.");
+    setTimeout(() => setPageError(""), 2500);
+  }
+
+  function handleShareWhatsApp() {
+    const text = encodeURIComponent(buildShareSummary());
+    window.open(`https://wa.me/?text=${text}`, "_blank", "noopener,noreferrer");
+  }
+
   return (
     <div className="lg-root">
       <div className="lg-toolbar">
@@ -549,7 +606,20 @@ export default function LogisticsPageClient({
             >
               Liste générale
             </button>
+            <button
+              type="button"
+              className={`lg-view-btn${viewMode === "people" ? " active" : ""}`}
+              onClick={() => setViewMode("people")}
+            >
+              Qui apporte quoi ?
+            </button>
           </div>
+          <button className="lg-btn-ghost" onClick={handleCopyShareSummary}>
+            Copier résumé
+          </button>
+          <button className="lg-btn-ghost" onClick={handleShareWhatsApp}>
+            WhatsApp
+          </button>
           <button className="lg-btn-primary" onClick={openCreateSection}>
             + Ajouter
           </button>
@@ -667,6 +737,47 @@ export default function LogisticsPageClient({
           <button className="lg-btn-primary" onClick={openCreateSection}>
             Créer la première section
           </button>
+        </div>
+      ) : viewMode === "people" ? (
+        <div className="lg-people-list">
+          <div className="lg-general-list-header">
+            <div>
+              <p className="lg-eyebrow">Vue par personne</p>
+              <h2>Qui apporte quoi ?</h2>
+            </div>
+            <span>{itemsByPerson.length} groupe{itemsByPerson.length > 1 ? "s" : ""}</span>
+          </div>
+
+          {itemsByPerson.map((group) => (
+            <section key={group.key} className="lg-person-group">
+              <div className="lg-person-group-head">
+                <h3>{group.label}</h3>
+                <span>{group.items.filter(({ item }) => !item.is_checked).length} à prévoir</span>
+              </div>
+              <div className="lg-items-list">
+                {group.items.map(({ section, item }) => (
+                  <LogisticsItemRow
+                    key={item.id}
+                    item={item}
+                    guests={guests}
+                    currentGuestId={currentGuestId}
+                    onEdit={openEditItem}
+                    onAssign={handleAssignItem}
+                    onTake={handleTakeItem}
+                    onToggle={handleToggleItem}
+                    onDelete={handleDeleteItem}
+                    onQuantityChange={handleQuantityChange}
+                    isSourceLocked={
+                      item.source_type === "accommodation_bed" ||
+                      section.source_type === "accommodation_bed" ||
+                      Boolean(item.notes?.toLowerCase().includes("module couchage"))
+                    }
+                    sectionTitle={section.title}
+                  />
+                ))}
+              </div>
+            </section>
+          ))}
         </div>
       ) : viewMode === "list" ? (
         filteredItems.length === 0 ? (

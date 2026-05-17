@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import type { LogisticsGuest, LogisticsItem } from "../logistics.types";
+import { getLogisticsItemStatusLabel } from "../logistics.types";
 
 interface Props {
   item: LogisticsItem;
@@ -66,6 +67,8 @@ export default function LogisticsItemRow({
     currentGuestId && item.assigned_guest_id === currentGuestId,
   );
   const quantity = readQuantity(item.quantity);
+  const statusLabel = getLogisticsItemStatusLabel(item);
+  const statusClass = item.is_checked ? "done" : item.assigned_guest_id ? "claimed" : "todo";
 
   async function assignTo(guestId: string | null) {
     setAssigning(true);
@@ -111,6 +114,7 @@ export default function LogisticsItemRow({
           {sectionTitle && (
             <span className="lg-item-section-chip">{sectionTitle}</span>
           )}
+          <span className={`lg-item-status-chip lg-item-status-${statusClass}`}>{statusLabel}</span>
         </div>
         {item.notes && <p className="lg-item-notes">{item.notes}</p>}
       </button>

@@ -8,6 +8,8 @@ export type GuestResponsibility = {
   title: string;
   subtitle?: string | null;
   status?: string | null;
+  is_done?: boolean;
+  assigned_guest_id?: string | null;
   source_type?: string | null;
   source_id?: string | null;
 };
@@ -24,6 +26,7 @@ type LogisticsItemRow = {
   label: string;
   quantity: string | null;
   notes: string | null;
+  assigned_guest_id: string | null;
   is_checked: boolean;
 };
 
@@ -75,7 +78,7 @@ export async function getGuestResponsibilities(
     supabase
       .from("logistics_items")
       .select(
-        "id, section_id, label, quantity, notes, is_checked",
+        "id, section_id, label, quantity, notes, assigned_guest_id, is_checked",
       )
       .eq("stay_id", stayId)
       .eq("assigned_guest_id", guestId)
@@ -170,7 +173,9 @@ export async function getGuestResponsibilities(
       type: "logistics_item",
       title: `${item.label}${item.quantity ? ` · ${item.quantity}` : ""}`,
       subtitle: sections.get(item.section_id)?.title ?? "Logistique",
-      status: item.is_checked ? "Terminé" : "À faire",
+      status: item.is_checked ? "Terminé" : item.assigned_guest_id ? "Je m’en occupe" : "À prévoir",
+      is_done: item.is_checked,
+      assigned_guest_id: item.assigned_guest_id,
       source_type: sections.get(item.section_id)?.source_type ?? null,
       source_id: sections.get(item.section_id)?.source_id ?? null,
     })),

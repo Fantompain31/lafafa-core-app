@@ -8,6 +8,7 @@ type StayAlert = {
   label: string;
   detail: string;
   href?: string;
+  actionLabel?: string;
   severity: "warning" | "info";
 };
 
@@ -93,10 +94,9 @@ export function StayAlertsBell({ stayId }: Props) {
           ) : (
             <div className="stay-alerts-list">
               {alerts.map((alert) => (
-                <a
+                <div
                   key={alert.id}
                   className={`stay-alert-row stay-alert-row-${alert.severity}`}
-                  href={alert.href ?? "#"}
                 >
                   <span className="stay-alert-row-icon">
                     {alert.severity === "warning" ? "!" : "i"}
@@ -105,7 +105,12 @@ export function StayAlertsBell({ stayId }: Props) {
                     <strong>{alert.label}</strong>
                     <small>{alert.detail}</small>
                   </span>
-                </a>
+                  {alert.href && (
+                    <a className="stay-alert-action" href={alert.href}>
+                      {alert.actionLabel ?? "Voir"}
+                    </a>
+                  )}
+                </div>
               ))}
             </div>
           )}
@@ -163,6 +168,7 @@ async function fetchStayAlerts(stayId: string): Promise<StayAlert[]> {
           .map((item) => item.label)
           .join(", ") + (logisticsItems.length > 3 ? "…" : ""),
       href: `/stays/${stayId}/logistique`,
+      actionLabel: "Je peux aider",
       severity: "warning",
     });
   }

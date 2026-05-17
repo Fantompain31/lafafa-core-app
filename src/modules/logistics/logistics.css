@@ -1498,3 +1498,16 @@
   .lg-detail-secondary-actions { display: grid; grid-template-columns: 1fr; }
   .lg-quantity-stepper { grid-column: 2; justify-self: flex-start; }
 }
+
+
+/* Statuts humains + vue par personne */
+.lg-item-status-chip { border-radius: 999px; padding: .18rem .5rem; font-size: .7rem; font-weight: 800; white-space: nowrap; }
+.lg-item-status-todo { background: #fff7ed; color: #9a3412; border: .5px solid #fed7aa; }
+.lg-item-status-claimed { background: #eff6ff; color: #1d4ed8; border: .5px solid #bfdbfe; }
+.lg-item-status-done { background: #ecfdf5; color: #047857; border: .5px solid #a7f3d0; }
+.lg-people-list { display: flex; flex-direction: column; gap: .9rem; }
+.lg-person-group { background: #fff; border: .5px solid var(--lg-border); border-radius: 1rem; padding: .9rem; }
+.lg-person-group-head { display:flex; justify-content:space-between; gap:1rem; align-items:center; margin-bottom:.75rem; }
+.lg-person-group-head h3 { margin:0; font-size:.95rem; font-weight:850; color:var(--lg-text); }
+.lg-person-group-head span { color:var(--lg-muted); font-size:.78rem; font-weight:750; }
+@media (max-width: 760px) { .lg-toolbar-right { width:100%; } .lg-toolbar-right .lg-btn-ghost, .lg-toolbar-right .lg-btn-primary { flex:1; } }
