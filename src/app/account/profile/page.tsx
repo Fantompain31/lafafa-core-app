@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import ProfilePageClient from '@/core/profiles/components/ProfilePageClient'
@@ -32,5 +33,32 @@ export default async function ProfilePage() {
     avatar_url: null,
   }
 
-  return <ProfilePageClient initialProfile={safeProfile} />
+  return (
+    <div className="flex flex-col gap-4">
+      <ProfilePageClient initialProfile={safeProfile} />
+
+      <div className="rounded-xl border border-neutral-200 bg-white p-5">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              Listes personnelles
+            </p>
+            <h2 className="mt-1 text-base font-semibold text-neutral-900">
+              Mes listes modèles
+            </h2>
+            <p className="mt-1 text-sm text-neutral-500">
+              Créez des listes privées réutilisables dans vos séjours : week-end, plage, mariage, sport…
+            </p>
+          </div>
+
+          <Link
+            href="/account/profile/lists"
+            className="rounded-lg border border-neutral-200 px-4 py-2 text-center text-sm font-medium text-neutral-700 hover:bg-neutral-50"
+          >
+            Gérer mes listes
+          </Link>
+        </div>
+      </div>
+    </div>
+  )
 }

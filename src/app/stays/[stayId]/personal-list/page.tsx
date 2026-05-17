@@ -12,6 +12,6 @@ export default async function PersonalListPage({ params }: Props) {
   if (!user) redirect("/auth/login");
   const { data: stay, error } = await supabase.from("my_stays").select("*").eq("id", params.stayId).single();
   if (error || !stay) notFound();
-  const { data: items } = await supabase.from("stay_personal_checklist_items").select("*").eq("stay_id", params.stayId).order("position", { ascending: true });
+  const { data: items } = await supabase.from("stay_personal_checklist_items").select("*").eq("stay_id", params.stayId).eq("user_id", user.id).order("position", { ascending: true });
   return <StayLayout stay={stay as MyStay}><PersonalChecklistClient stayId={params.stayId} initialItems={items ?? []} /></StayLayout>;
 }

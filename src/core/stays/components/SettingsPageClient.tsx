@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { settingsService } from '@/core/stays/services/settings.service'
 import { staysService } from '@/core/stays/services/stays.service'
 import { STAY_COLOR_OPTIONS } from '@/shared/constants/colors'
@@ -55,6 +56,7 @@ export function SettingsPageClient({
   const [saving, setSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
   const [saveSuccess, setSaveSuccess] = useState(false)
+  const [leaving, setLeaving] = useState(false)
 
   async function handleSaveStay(e: React.FormEvent) {
     e.preventDefault()
@@ -157,6 +159,38 @@ export function SettingsPageClient({
       setSaveError(
         err instanceof Error ? err.message : 'Erreur lors de la suppression'
       )
+    }
+  }
+
+
+  async function handleLeaveStay() {
+    if (myRole === 'owner') return
+
+    const confirmed = confirm(
+      'Quitter ce séjour ? Vous ne le verrez plus dans votre tableau de bord. Vos attributions seront libérées, mais les éléments du séjour seront conservés.'
+    )
+
+    if (!confirmed) return
+
+    setLeaving(true)
+    setSaveError(null)
+
+    try {
+      const supabase = createClient()
+      const { error } = await supabase.rpc('leave_stay', {
+        p_stay_id: stay.id,
+      })
+
+      if (error) throw new Error(error.message)
+
+      router.push('/dashboard')
+      router.refresh()
+    } catch (err) {
+      setSaveError(
+        err instanceof Error ? err.message : 'Erreur lors de la sortie du séjour'
+      )
+    } finally {
+      setLeaving(false)
     }
   }
 
@@ -323,6 +357,29 @@ export function SettingsPageClient({
           </div>
         )}
       </div>
+
+
+      {myRole !== 'owner' && (
+        <div className="rounded-xl border border-neutral-200 bg-white p-5">
+          <h3 className="mb-3 text-sm font-medium text-neutral-700">
+            Mon accès au séjour
+          </h3>
+
+          <p className="mb-4 text-xs leading-relaxed text-neutral-500">
+            Vous pouvez quitter ce séjour à tout moment. Le séjour disparaîtra de votre tableau de bord.
+            Les objets, couchages ou tâches qui vous étaient attribués repasseront en non attribué.
+          </p>
+
+          <button
+            type="button"
+            onClick={() => void handleLeaveStay()}
+            disabled={leaving}
+            className="rounded-lg border border-red-200 px-4 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
+          >
+            {leaving ? 'Sortie en cours…' : 'Quitter le séjour'}
+          </button>
+        </div>
+      )}
 
       {canManageDangerZone && (
         <div className="rounded-xl border border-red-200 bg-white p-5">
