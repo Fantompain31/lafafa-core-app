@@ -25,13 +25,13 @@ type LogisticsItemRow = {
   quantity: string | null;
   notes: string | null;
   is_checked: boolean;
-  source_type: string | null;
-  source_id: string | null;
 };
 
 type LogisticsSectionRow = {
   id: string;
   title: string;
+  source_type: string | null;
+  source_id: string | null;
 };
 
 type AccommodationAssignmentRow = {
@@ -75,7 +75,7 @@ export async function getGuestResponsibilities(
     supabase
       .from("logistics_items")
       .select(
-        "id, section_id, label, quantity, notes, is_checked, source_type, source_id",
+        "id, section_id, label, quantity, notes, is_checked",
       )
       .eq("stay_id", stayId)
       .eq("assigned_guest_id", guestId)
@@ -124,7 +124,7 @@ export async function getGuestResponsibilities(
     sectionIds.length > 0
       ? supabase
           .from("logistics_sections")
-          .select("id, title")
+          .select("id, title, source_type, source_id")
           .in("id", sectionIds)
       : Promise.resolve({ data: [], error: null }),
     bedIds.length > 0
@@ -171,8 +171,8 @@ export async function getGuestResponsibilities(
       title: `${item.label}${item.quantity ? ` · ${item.quantity}` : ""}`,
       subtitle: sections.get(item.section_id)?.title ?? "Logistique",
       status: item.is_checked ? "Terminé" : "À faire",
-      source_type: item.source_type,
-      source_id: item.source_id,
+      source_type: sections.get(item.section_id)?.source_type ?? null,
+      source_id: sections.get(item.section_id)?.source_id ?? null,
     })),
     accommodation: assignments.map((assignment) => {
       const bed = beds.get(assignment.bed_id);

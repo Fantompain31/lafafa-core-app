@@ -373,14 +373,6 @@ export function GuestForm({
         />
       </Field>
 
-      {isEditing && (
-        <GuestResponsibilitiesBox
-          responsibilities={responsibilities}
-          error={responsibilitiesError}
-          hasArrival={Boolean(guest?.arrival_at)}
-          hasDeparture={Boolean(guest?.departure_at)}
-        />
-      )}
 
       <div className="flex gap-3 pt-1">
         {onCancel && (

@@ -4,6 +4,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import {
+  getGuestResponsibilities,
+  type GuestResponsibilities,
+} from "@/core/guests/services/guest-responsibilities.service";
 import type {
   MyStay,
   GuestSummary,
@@ -127,6 +131,10 @@ export function StayHome({
   const [coverUrl, setCoverUrl] = useState<string | null>(null);
   const [coverLoading, setCoverLoading] = useState(false);
   const [coverError, setCoverError] = useState<string | null>(null);
+  const [myResponsibilities, setMyResponsibilities] =
+    useState<GuestResponsibilities | null>(null);
+  const [myResponsibilitiesError, setMyResponsibilitiesError] = useState<string | null>(null);
+  const [myResponsibilitiesLoading, setMyResponsibilitiesLoading] = useState(false);
   const confirmed = participants.filter((p) => p.status === "confirmed");
   const total = participants.length;
 
@@ -206,6 +214,39 @@ export function StayHome({
       cancelled = true;
     };
   }, [stay.cover_image_bucket, stay.cover_image_path]);
+
+  useEffect(() => {
+  const guestId = myGuest?.id ?? null;
+
+  if (!guestId) {
+    setMyResponsibilities(null);
+    return;
+  }
+
+  const resolvedGuestId: string = guestId;
+  let cancelled = false;
+
+  async function loadResponsibilities() {
+    try {
+      const data = await getGuestResponsibilities(stay.id, resolvedGuestId);
+
+      if (!cancelled) {
+        setMyResponsibilities(data);
+      }
+    } catch (err) {
+      if (!cancelled) {
+        console.error('Failed to load home responsibilities', err);
+        setMyResponsibilities(null);
+      }
+    }
+  }
+
+  void loadResponsibilities();
+
+  return () => {
+    cancelled = true;
+  };
+}, [stay.id, myGuest?.id]);
 
   async function handleCoverFileChange(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -512,6 +553,15 @@ export function StayHome({
                 inclure dans la planification.
               </p>
             )}
+
+            {myGuest && (
+              <HomeResponsibilitiesCard
+                responsibilities={myResponsibilities}
+                loading={myResponsibilitiesLoading}
+                error={myResponsibilitiesError}
+                onOpen={() => router.push(`/stays/${stay.id}/logistique`)}
+              />
+            )}
           </div>
 
           <DashboardProgramCard
@@ -634,6 +684,89 @@ export function StayHome({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+
+function HomeResponsibilitiesCard({
+  responsibilities,
+  loading,
+  error,
+  onOpen,
+}: {
+  responsibilities: GuestResponsibilities | null;
+  loading: boolean;
+  error: string | null;
+  onOpen: () => void;
+}) {
+  const rows = responsibilities
+    ? [
+        ...responsibilities.logistics.map((item) => ({
+          ...item,
+          group: "Logistique",
+          icon: "🧺",
+        })),
+        ...responsibilities.accommodation.map((item) => ({
+          ...item,
+          group: "Couchage",
+          icon: "🛏️",
+        })),
+        ...responsibilities.planning.map((item) => ({
+          ...item,
+          group: "Planning",
+          icon: "🗓️",
+        })),
+      ]
+    : [];
+
+  return (
+    <div className="sh-responsibilities-card">
+      <div className="sh-responsibilities-head">
+        <div>
+          <p className="sh-section-label">À faire / à apporter</p>
+          <p className="sh-responsibilities-title">Votre récapitulatif</p>
+        </div>
+        <span className="sh-responsibilities-count">
+          {loading ? "…" : rows.length} élément{rows.length > 1 ? "s" : ""}
+        </span>
+      </div>
+
+      {error ? (
+        <p className="sh-responsibilities-error">{error}</p>
+      ) : loading ? (
+        <p className="sh-empty-hint">Chargement de votre récapitulatif…</p>
+      ) : rows.length === 0 ? (
+        <p className="sh-empty-hint">Rien ne vous est attribué pour le moment.</p>
+      ) : (
+        <div className="sh-responsibilities-list">
+          {rows.slice(0, 5).map((item) => (
+            <button
+              key={`${item.type}-${item.id}`}
+              type="button"
+              className="sh-responsibility-row"
+              onClick={onOpen}
+            >
+              <span className="sh-responsibility-icon">{item.icon}</span>
+              <span className="sh-responsibility-body">
+                <span className="sh-responsibility-title">{item.title}</span>
+                <span className="sh-responsibility-meta">
+                  {item.group}
+                  {item.subtitle ? ` · ${item.subtitle}` : ""}
+                </span>
+              </span>
+              {item.status && (
+                <span className="sh-responsibility-status">{item.status}</span>
+              )}
+            </button>
+          ))}
+          {rows.length > 5 && (
+            <button type="button" className="sh-responsibilities-more" onClick={onOpen}>
+              Voir les {rows.length - 5} autre{rows.length - 5 > 1 ? "s" : ""}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
