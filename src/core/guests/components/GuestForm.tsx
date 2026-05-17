@@ -123,36 +123,43 @@ export function GuestForm({
     : null;
 
   useEffect(() => {
-    if (!guest?.id) {
-      setResponsibilities(null);
-      return;
-    }
+  const guestId = guest?.id;
 
-    let cancelled = false;
+  if (!guestId) {
+    setResponsibilities(null);
+    setResponsibilitiesError(null);
+    return;
+  }
 
-    async function loadResponsibilities() {
-      setResponsibilitiesError(null);
-      try {
-        const data = await getGuestResponsibilities(stayId, guest.id);
-        if (!cancelled) setResponsibilities(data);
-      } catch (err) {
-        if (!cancelled) {
-          setResponsibilities(null);
-          setResponsibilitiesError(
-            err instanceof Error
-              ? err.message
-              : "Impossible de charger le récapitulatif.",
-          );
-        }
+  let cancelled = false;
+
+  async function loadResponsibilities() {
+    setResponsibilitiesError(null);
+
+    try {
+      const data = await getGuestResponsibilities(stayId, guestId);
+
+      if (!cancelled) {
+        setResponsibilities(data);
+      }
+    } catch (err) {
+      if (!cancelled) {
+        setResponsibilities(null);
+        setResponsibilitiesError(
+          err instanceof Error
+            ? err.message
+            : "Impossible de charger le récapitulatif.",
+        );
       }
     }
+  }
 
-    void loadResponsibilities();
+  void loadResponsibilities();
 
-    return () => {
-      cancelled = true;
-    };
-  }, [guest?.id, stayId]);
+  return () => {
+    cancelled = true;
+  };
+}, [guest?.id, stayId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
