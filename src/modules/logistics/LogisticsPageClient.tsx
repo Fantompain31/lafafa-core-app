@@ -27,6 +27,7 @@ import {
 } from "./logistics.service";
 import LogisticsSectionCard from "./components/LogisticsSectionCard";
 import LogisticsSectionDetailModal from "./components/LogisticsSectionDetailModal";
+import LogisticsItemRow from "./components/LogisticsItemRow";
 import LogisticsSectionModal from "./components/LogisticsSectionModal";
 import LogisticsItemModal from "./components/LogisticsItemModal";
 import "./logistics.css";

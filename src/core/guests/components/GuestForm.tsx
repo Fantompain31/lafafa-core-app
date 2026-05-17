@@ -123,44 +123,44 @@ export function GuestForm({
     : null;
 
   useEffect(() => {
-  const guestId = guest?.id ?? null;
+    const guestId = guest?.id ?? null;
 
-  if (!guestId) {
-    setResponsibilities(null);
-    setResponsibilitiesError(null);
-    return;
-  }
-  
-  const resolvedGuestId: string = guestId;
-  let cancelled = false;
+    if (!guestId) {
+      setResponsibilities(null);
+      setResponsibilitiesError(null);
+      return;
+    }
 
-  async function loadResponsibilities() {
-    setResponsibilitiesError(null);
+    const resolvedGuestId: string = guestId;
+    let cancelled = false;
 
-    try {
-      const data = await getGuestResponsibilities(stayId, guestId);
+    async function loadResponsibilities() {
+      setResponsibilitiesError(null);
 
-      if (!cancelled) {
-        setResponsibilities(data);
-      }
-    } catch (err) {
-      if (!cancelled) {
-        setResponsibilities(null);
-        setResponsibilitiesError(
-          err instanceof Error
-            ? err.message
-            : "Impossible de charger le récapitulatif.",
-        );
+      try {
+        const data = await getGuestResponsibilities(stayId, resolvedGuestId);
+
+        if (!cancelled) {
+          setResponsibilities(data);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setResponsibilities(null);
+          setResponsibilitiesError(
+            err instanceof Error
+              ? err.message
+              : "Impossible de charger le récapitulatif.",
+          );
+        }
       }
     }
-  }
 
-  void loadResponsibilities();
+    void loadResponsibilities();
 
-  return () => {
-    cancelled = true;
-  };
-}, [guest?.id, stayId]);
+    return () => {
+      cancelled = true;
+    };
+  }, [guest?.id, stayId]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
