@@ -1,0 +1,119 @@
+.account-shell {
+  min-height: 100dvh;
+  display: flex;
+  background: #f5f0e8;
+}
+
+.account-sidebar {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  width: 220px;
+  flex: 0 0 220px;
+  background: #fff;
+  border-right: 1px solid rgba(196, 168, 130, 0.22);
+  padding: 0.85rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.account-sidebar-brand {
+  padding: 0.65rem 0.55rem 0.95rem;
+  border-bottom: 1px solid rgba(196, 168, 130, 0.16);
+}
+
+.account-sidebar-logo {
+  display: block;
+  color: #2c2420;
+  font-size: 1rem;
+  font-weight: 900;
+}
+
+.account-sidebar-brand small {
+  color: #a08870;
+  font-size: 0.75rem;
+}
+
+.account-sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  flex: 1;
+}
+
+.account-sidebar-link,
+.account-sidebar-signout {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  min-height: 38px;
+  border-radius: 0.7rem;
+  padding: 0.55rem 0.65rem;
+  text-decoration: none;
+  color: #7a6a5a;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  transition: background 0.15s, color 0.15s;
+}
+
+.account-sidebar-link:hover,
+.account-sidebar-link.active {
+  background: rgba(196, 168, 130, 0.16);
+  color: #2c2420;
+}
+
+.account-sidebar-signout {
+  color: #b35b4a;
+}
+
+.account-sidebar-signout:hover {
+  background: #fff0ed;
+}
+
+.account-shell-main {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.account-mobile-nav {
+  display: none;
+  gap: 0.45rem;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.account-mobile-nav a {
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: #7a6044;
+  background: #fff;
+  border: 1px solid rgba(196, 168, 130, 0.25);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+@media (max-width: 840px) {
+  .account-shell {
+    display: block;
+  }
+
+  .account-sidebar {
+    display: none;
+  }
+
+  .account-shell-main {
+    padding: 1rem 0.9rem 5rem;
+  }
+
+  .account-mobile-nav {
+    display: flex;
+  }
+}

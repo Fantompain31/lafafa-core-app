@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   createPersonalTemplate,
-  deletePersonalTemplate,
   type PersonalChecklistTemplate,
 } from "./personal-checklists.service";
 import "./personal-checklists.css";
@@ -15,127 +14,143 @@ export function ProfilePersonalListsClient({
 }) {
   const [templates, setTemplates] = useState(initialTemplates);
   const [name, setName] = useState("");
-  const [itemsText, setItemsText] = useState(
-    "Chargeur\nTrousse de toilette\nServiette\nPyjama",
+  const [draftItem, setDraftItem] = useState("");
+  const [draftItems, setDraftItems] = useState<string[]>([
+    "Chargeur",
+    "Trousse de toilette",
+    "Serviette",
+    "Pyjama",
+  ]);
+  const [loading, setLoading] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const canCreate = useMemo(
+    () => name.trim().length > 0 && draftItems.length > 0 && !loading,
+    [draftItems.length, loading, name],
   );
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+
+  function addDraftItem() {
+    const title = draftItem.trim();
+    if (!title) return;
+
+    setDraftItems((current) =>
+      current.some((item) => item.toLowerCase() === title.toLowerCase())
+        ? current
+        : [...current, title],
+    );
+    setDraftItem("");
+  }
+
+  function removeDraftItem(index: number) {
+    setDraftItems((current) => current.filter((_, itemIndex) => itemIndex !== index));
+  }
 
   async function createTemplate() {
     const templateName = name.trim();
-    const titles = itemsText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean);
+    if (!templateName || draftItems.length === 0) return;
 
-    if (!templateName) {
-      setError("Donnez un nom à votre liste.");
-      return;
-    }
-
-    if (titles.length === 0) {
-      setError("Ajoutez au moins un élément à la liste.");
-      return;
-    }
-
-    setSaving(true);
-    setError(null);
+    setLoading(true);
+    setMessage(null);
 
     try {
-      const created = await createPersonalTemplate(templateName, titles);
-      setTemplates((current) => [...current, created]);
+      const created = await createPersonalTemplate(templateName, draftItems);
+      setTemplates((current) => [
+        ...current,
+        {
+          ...created,
+          items: draftItems.map((title, index) => ({
+            id: `${created.id}-${index}`,
+            title,
+            position: index,
+          })),
+        },
+      ]);
       setName("");
-      setItemsText("");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Impossible de créer la liste.");
+      setDraftItems([]);
+      setMessage("Liste enregistrée. Vous pourrez l’importer dans vos séjours.");
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : "Impossible de créer la liste.");
     } finally {
-      setSaving(false);
-    }
-  }
-
-  async function removeTemplate(templateId: string) {
-    const confirmed = confirm(
-      "Supprimer cette liste modèle ? Les listes déjà importées dans vos séjours ne seront pas supprimées.",
-    );
-
-    if (!confirmed) return;
-
-    const previous = templates;
-    setTemplates((current) => current.filter((template) => template.id !== templateId));
-
-    try {
-      await deletePersonalTemplate(templateId);
-    } catch (err) {
-      setTemplates(previous);
-      setError(err instanceof Error ? err.message : "Impossible de supprimer la liste.");
+      setLoading(false);
     }
   }
 
   return (
     <div className="pcl-root">
       <div className="pcl-header">
-        <div>
-          <p>Mes listes modèles</p>
-          <h1>Préparez vos listes une fois, réutilisez-les dans vos séjours</h1>
-          <span>Week-end, plage, mariage, sport… Ces listes restent privées.</span>
-        </div>
+        <p>Mes listes modèles</p>
+        <h1>Préparez vos listes une fois, réutilisez-les dans vos séjours</h1>
+        <span>
+          Créez vos listes types ici, puis importez seulement les éléments utiles dans chaque séjour.
+        </span>
       </div>
 
-      {error && <div className="pcl-error">{error}</div>}
-
-      <div className="pcl-template-form">
+      <div className="pcl-form pcl-template-builder">
         <label className="pcl-field">
           <span>Nom de la liste</span>
           <input
             value={name}
             onChange={(event) => setName(event.target.value)}
-            placeholder="Liste week-end, plage, mariage…"
+            placeholder="Liste week-end, plage, mariage..."
           />
         </label>
 
-        <label className="pcl-field">
-          <span>Éléments, un par ligne</span>
-          <textarea
-            value={itemsText}
-            onChange={(event) => setItemsText(event.target.value)}
-            placeholder={"Chargeur\nTrousse de toilette\nServiette"}
-          />
-        </label>
+        <div className="pcl-quick-add">
+          <span>Éléments</span>
+          <div className="pcl-quick-add-row">
+            <input
+              value={draftItem}
+              onChange={(event) => setDraftItem(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault();
+                  addDraftItem();
+                }
+              }}
+              placeholder="Ajouter rapidement : chargeur, serviette..."
+            />
+            <button type="button" onClick={addDraftItem}>
+              + Ajouter
+            </button>
+          </div>
+        </div>
 
-        <button
-          type="button"
-          className="pcl-primary-btn"
-          disabled={saving}
-          onClick={() => void createTemplate()}
-        >
-          {saving ? "Création…" : "Créer la liste"}
+        <div className="pcl-draft-items">
+          {draftItems.length === 0 ? (
+            <span className="pcl-muted">Ajoutez au moins un élément pour créer la liste.</span>
+          ) : (
+            draftItems.map((item, index) => (
+              <span key={`${item}-${index}`} className="pcl-draft-chip">
+                {item}
+                <button type="button" onClick={() => removeDraftItem(index)} aria-label={`Retirer ${item}`}>
+                  ×
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+
+        {message && <p className="pcl-message">{message}</p>}
+
+        <button type="button" onClick={() => void createTemplate()} disabled={!canCreate}>
+          {loading ? "Création…" : "Créer la liste"}
         </button>
       </div>
 
       <div className="pcl-list">
         {templates.length === 0 ? (
-          <div className="pcl-empty">
-            Aucune liste enregistrée. Créez votre première liste pour pouvoir l’importer dans un séjour.
-          </div>
+          <div className="pcl-empty">Aucune liste enregistrée.</div>
         ) : (
           templates.map((template) => (
-            <div key={template.id} className="pcl-template-card">
+            <div key={template.id} className="pcl-row pcl-template-row">
               <div>
-                <strong>{template.name}</strong>
+                <span className="pcl-row-title">{template.name}</span>
                 <small>
-                  {(template.items ?? []).length > 0
-                    ? template.items?.map((item) => item.title).join(", ")
+                  {template.items?.length
+                    ? template.items.map((item) => item.title).join(", ")
                     : "Aucun élément"}
                 </small>
               </div>
-
-              <button
-                type="button"
-                className="pcl-danger-btn"
-                onClick={() => void removeTemplate(template.id)}
-              >
-                Supprimer
-              </button>
             </div>
           ))
         )}

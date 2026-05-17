@@ -1,337 +1,106 @@
-/* src/core/personal-checklists/personal-checklists.css */
-
-.pcl-root {
-  max-width: 760px;
-  margin: 0 auto;
-  padding: 1.25rem;
-  color: #2c2420;
-}
-
-.pcl-header,
-.pcl-form,
-.pcl-row,
-.pcl-empty,
-.pcl-template-form,
-.pcl-template-card {
-  background: #fff;
-  border: 1px solid rgba(196, 168, 130, 0.25);
-  border-radius: 1rem;
-}
-
-.pcl-header {
-  padding: 1.2rem;
-  margin-bottom: 1rem;
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-}
-
-.pcl-header p,
-.pcl-modal-header p {
-  margin: 0;
-  color: #c4a882;
-  font-size: 0.75rem;
-  font-weight: 900;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.pcl-header h1,
-.pcl-modal-header h2 {
-  margin: 0.25rem 0;
-  font-size: 1.25rem;
-  line-height: 1.2;
-}
-
-.pcl-header span {
-  color: #8f7f70;
-  font-size: 0.85rem;
-}
-
-.pcl-form {
-  display: flex;
-  gap: 0.6rem;
-  padding: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.pcl-form input,
-.pcl-field input,
-.pcl-field textarea,
-.pcl-field select {
-  width: 100%;
-  border: 1px solid rgba(196, 168, 130, 0.3);
-  border-radius: 0.75rem;
-  padding: 0.7rem;
-  font: inherit;
-  background: #fff;
-  color: #2c2420;
+.pcl-root{max-width:760px;margin:0 auto;padding:1.25rem}.pcl-header,.pcl-form,.pcl-row,.pcl-empty{background:#fff;border:1px solid rgba(196,168,130,.25);border-radius:1rem}.pcl-header{padding:1.2rem;margin-bottom:1rem}.pcl-header p{margin:0;color:#C4A882;font-size:.75rem;font-weight:900;text-transform:uppercase}.pcl-header h1{margin:.25rem 0;font-size:1.25rem}.pcl-header span{color:#8f7f70;font-size:.85rem}.pcl-form{display:flex;gap:.6rem;padding:.8rem;margin-bottom:1rem}.pcl-form input{flex:1;border:1px solid rgba(196,168,130,.3);border-radius:.75rem;padding:.7rem}.pcl-form button{border:0;background:#C4A882;color:white;border-radius:.75rem;padding:.7rem 1rem;font-weight:800}.pcl-list{display:flex;flex-direction:column;gap:.55rem}.pcl-row{display:flex;align-items:center;gap:.75rem;padding:.75rem}.pcl-row button:first-child{width:26px;height:26px;border-radius:999px;border:1px solid rgba(196,168,130,.4);background:#fff}.pcl-row.done span{text-decoration:line-through;color:#9a8978}.pcl-row.done button:first-child{background:#C4A882;color:#fff}.pcl-row button:last-child{margin-left:auto;border:0;background:transparent;color:#c0392b;font-size:1.2rem}.pcl-empty{text-align:center;color:#999;padding:2rem}@media(max-width:720px){.pcl-root{padding:.9rem}.pcl-form{flex-direction:column}}
+/* ─── Profil : constructeur de liste rapide ─── */
+.pcl-template-builder {
+  align-items: stretch;
 }
 
 .pcl-field {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.45rem;
 }
 
-.pcl-field span {
+.pcl-field span,
+.pcl-quick-add > span {
   font-size: 0.78rem;
-  color: #7a6a5a;
   font-weight: 800;
-}
-
-.pcl-field textarea {
-  min-height: 110px;
-  resize: vertical;
-}
-
-.pcl-form button,
-.pcl-primary-btn {
-  border: 0;
-  background: #c4a882;
-  color: white;
-  border-radius: 0.75rem;
-  padding: 0.7rem 1rem;
-  font-weight: 800;
-  cursor: pointer;
-}
-
-.pcl-form button:disabled,
-.pcl-primary-btn:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.pcl-secondary-btn,
-.pcl-danger-btn {
-  border-radius: 0.75rem;
-  padding: 0.65rem 0.9rem;
-  font-weight: 800;
-  cursor: pointer;
-  background: #fff;
-  font: inherit;
-}
-
-.pcl-secondary-btn {
   color: #7a6044;
-  border: 1px solid rgba(196, 168, 130, 0.35);
 }
 
-.pcl-secondary-btn:hover {
-  background: #faf7f3;
-}
-
-.pcl-danger-btn {
-  color: #c0392b;
-  border: 1px solid rgba(192, 57, 43, 0.25);
-}
-
-.pcl-danger-btn:hover {
-  background: #fdecea;
-}
-
-.pcl-error {
-  border: 1px solid rgba(192, 57, 43, 0.22);
-  background: #fdecea;
-  color: #c0392b;
+.pcl-field input,
+.pcl-quick-add-row input {
+  width: 100%;
+  border: 1px solid rgba(196, 168, 130, 0.3);
   border-radius: 0.85rem;
-  padding: 0.75rem 0.9rem;
-  font-size: 0.86rem;
-  margin-bottom: 1rem;
-}
-
-.pcl-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
-}
-
-.pcl-row {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem;
-}
-
-.pcl-row button:first-child {
-  width: 26px;
-  height: 26px;
-  border-radius: 999px;
-  border: 1px solid rgba(196, 168, 130, 0.4);
+  padding: 0.75rem 0.85rem;
+  font: inherit;
+  color: #2c2420;
   background: #fff;
-  cursor: pointer;
+  outline: none;
 }
 
-.pcl-row.done span {
-  text-decoration: line-through;
-  color: #9a8978;
+.pcl-field input:focus,
+.pcl-quick-add-row input:focus {
+  border-color: #c4a882;
+  box-shadow: 0 0 0 3px rgba(196, 168, 130, 0.14);
 }
 
-.pcl-row.done button:first-child {
-  background: #c4a882;
-  color: #fff;
-}
-
-.pcl-row button:last-child {
-  margin-left: auto;
-  border: 0;
-  background: transparent;
-  color: #c0392b;
-  font-size: 1.2rem;
-  cursor: pointer;
-}
-
-.pcl-empty {
-  text-align: center;
-  color: #999;
-  padding: 2rem;
-  line-height: 1.5;
-}
-
-.pcl-template-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0.85rem;
-  padding: 1rem;
-  margin-bottom: 1rem;
-}
-
-.pcl-template-form .pcl-primary-btn {
-  align-self: flex-start;
-}
-
-.pcl-template-card {
-  padding: 0.9rem;
-  display: flex;
-  justify-content: space-between;
-  gap: 1rem;
-  align-items: flex-start;
-}
-
-.pcl-template-card strong,
-.pcl-template-card small {
-  display: block;
-}
-
-.pcl-template-card small {
-  color: #8f7f70;
-  margin-top: 0.25rem;
-  line-height: 1.4;
-}
-
-.pcl-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 250;
-  background: rgba(0, 0, 0, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-}
-
-.pcl-modal {
-  width: min(620px, 100%);
-  max-height: 88vh;
-  overflow: auto;
-  background: #fff;
-  border-radius: 1.1rem;
-  padding: 1.1rem;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.18);
-}
-
-.pcl-modal-header {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
-  border-bottom: 1px solid rgba(196, 168, 130, 0.18);
-  padding-bottom: 0.8rem;
-  margin-bottom: 1rem;
-}
-
-.pcl-modal-header button {
-  border: 0;
-  width: 34px;
-  height: 34px;
-  border-radius: 999px;
-  background: #faf7f3;
-  color: #7a6a5a;
-  font-size: 1.25rem;
-  cursor: pointer;
-}
-
-.pcl-import-items {
+.pcl-quick-add {
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
-  margin: 1rem 0;
 }
 
-.pcl-import-row {
+.pcl-quick-add-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.55rem;
+}
+
+.pcl-draft-items {
   display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  min-height: 2.2rem;
+}
+
+.pcl-draft-chip {
+  display: inline-flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.65rem 0.75rem;
-  border: 1px solid rgba(196, 168, 130, 0.2);
-  border-radius: 0.75rem;
+  gap: 0.35rem;
+  border-radius: 999px;
+  background: #faf7f3;
+  border: 1px solid rgba(196, 168, 130, 0.22);
+  color: #6c5a48;
+  padding: 0.35rem 0.45rem 0.35rem 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.pcl-draft-chip button {
+  width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: none;
+  background: #fff;
+  color: #9a8978;
   cursor: pointer;
 }
 
-.pcl-import-row:hover {
-  background: #faf7f3;
+.pcl-muted,
+.pcl-message {
+  font-size: 0.82rem;
+  color: #8f7f70;
 }
 
-.pcl-import-row input {
-  accent-color: #c4a882;
+.pcl-template-row {
+  align-items: flex-start;
 }
 
-.pcl-modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 0.65rem;
-  flex-wrap: wrap;
+.pcl-row-title {
+  display: block;
+  font-weight: 800;
+  color: #2c2420;
+  margin-bottom: 0.2rem;
 }
 
-@media (max-width: 720px) {
-  .pcl-root {
-    padding: 0.9rem;
+@media (max-width: 700px) {
+  .pcl-quick-add-row {
+    grid-template-columns: 1fr;
   }
 
-  .pcl-header,
-  .pcl-form,
-  .pcl-template-card {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .pcl-form {
-    flex-direction: column;
-  }
-
-  .pcl-template-form .pcl-primary-btn,
-  .pcl-header .pcl-secondary-btn,
-  .pcl-modal-actions button {
+  .pcl-quick-add-row button,
+  .pcl-template-builder > button {
     width: 100%;
-  }
-
-  .pcl-modal-overlay {
-    padding: 0;
-    align-items: stretch;
-  }
-
-  .pcl-modal {
-    width: 100%;
-    max-height: none;
-    height: 100dvh;
-    border-radius: 0;
-  }
-
-  .pcl-modal-header {
-    position: sticky;
-    top: 0;
-    background: #fff;
-    z-index: 1;
   }
 }

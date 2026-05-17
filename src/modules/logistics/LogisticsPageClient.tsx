@@ -30,6 +30,7 @@ import LogisticsSectionDetailModal from "./components/LogisticsSectionDetailModa
 import LogisticsItemRow from "./components/LogisticsItemRow";
 import LogisticsSectionModal from "./components/LogisticsSectionModal";
 import LogisticsItemModal from "./components/LogisticsItemModal";
+import TemplatesPicker from "@/modules/templates/TemplatesPicker";
 import "./logistics.css";
 
 interface Props {
@@ -106,11 +107,26 @@ export default function LogisticsPageClient({
   const [search, setSearch] = useState("");
   const [openedSectionId, setOpenedSectionId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("sections");
+  const [templatesOpen, setTemplatesOpen] = useState(false);
+
+  async function refreshSections() {
+    try {
+      const freshSections = await fetchLogisticsSections(stayId);
+      setSections(freshSections);
+      setOpenedSectionId((current) =>
+        current && freshSections.some((section) => section.id === current)
+          ? current
+          : null,
+      );
+    } catch (error) {
+      console.warn("Impossible de rafraîchir la logistique", error);
+    }
+  }
 
   useEffect(() => {
     let cancelled = false;
 
-    async function refreshSections() {
+    async function refreshSectionsOnMount() {
       try {
         const freshSections = await fetchLogisticsSections(stayId);
         if (cancelled) return;
@@ -126,7 +142,7 @@ export default function LogisticsPageClient({
       }
     }
 
-    void refreshSections();
+    void refreshSectionsOnMount();
 
     const handleFocus = () => {
       void refreshSections();
@@ -620,6 +636,9 @@ export default function LogisticsPageClient({
           <button className="lg-btn-ghost" onClick={handleShareWhatsApp}>
             WhatsApp
           </button>
+          <button className="lg-btn-ghost" onClick={() => setTemplatesOpen(true)}>
+            Modèles
+          </button>
           <button className="lg-btn-primary" onClick={openCreateSection}>
             + Ajouter
           </button>
@@ -734,9 +753,14 @@ export default function LogisticsPageClient({
             Ajoutez une section comme “Apéro samedi soir”, “Couchage” ou
             “Matériel cuisine”.
           </p>
-          <button className="lg-btn-primary" onClick={openCreateSection}>
-            Créer la première section
-          </button>
+          <div className="lg-empty-actions">
+            <button className="lg-btn-primary" onClick={() => setTemplatesOpen(true)}>
+              Ajouter depuis un modèle
+            </button>
+            <button className="lg-btn-ghost" onClick={openCreateSection}>
+              Créer une section vide
+            </button>
+          </div>
         </div>
       ) : viewMode === "people" ? (
         <div className="lg-people-list">
@@ -917,6 +941,34 @@ export default function LogisticsPageClient({
           onSave={handleSaveItem}
           onClose={closeItemModal}
         />
+      )}
+
+      {templatesOpen && (
+        <div className="lg-template-modal" role="dialog" aria-modal="true">
+          <div className="lg-template-backdrop" onClick={() => setTemplatesOpen(false)} />
+          <div className="lg-template-panel">
+            <div className="lg-template-panel-head">
+              <div>
+                <p className="lg-eyebrow">Modèles</p>
+                <h2>Ajouter depuis un modèle</h2>
+                <span>Le modèle ajoute des sections et objets. Rien n’est supprimé.</span>
+              </div>
+              <button type="button" onClick={() => setTemplatesOpen(false)} aria-label="Fermer">
+                ×
+              </button>
+            </div>
+            <TemplatesPicker
+              stayId={stayId}
+              onApplied={() => {
+                void refreshSections();
+              }}
+              onClose={() => {
+                setTemplatesOpen(false);
+                void refreshSections();
+              }}
+            />
+          </div>
+        </div>
       )}
     </div>
   );
