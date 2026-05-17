@@ -123,14 +123,15 @@ export function GuestForm({
     : null;
 
   useEffect(() => {
-  const guestId = guest?.id;
+  const guestId = guest?.id ?? null;
 
   if (!guestId) {
     setResponsibilities(null);
     setResponsibilitiesError(null);
     return;
   }
-
+  
+  const resolvedGuestId: string = guestId;
   let cancelled = false;
 
   async function loadResponsibilities() {
