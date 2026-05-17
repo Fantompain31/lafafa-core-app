@@ -9,9 +9,17 @@ type Props = {
   stayId: string
   userId: string
   guest: GuestSummary | null
+  stayStartDate?: string | null
+  stayEndDate?: string | null
 }
 
-export default function MyStayGuestPageClient({ stayId, userId, guest }: Props) {
+export default function MyStayGuestPageClient({
+  stayId,
+  userId,
+  guest,
+  stayStartDate = null,
+  stayEndDate = null,
+}: Props) {
   const router = useRouter()
   const [success, setSuccess] = useState(false)
 
@@ -42,6 +50,8 @@ export default function MyStayGuestPageClient({ stayId, userId, guest }: Props) 
 
         <GuestForm
           stayId={stayId}
+          stayStartDate={stayStartDate}
+          stayEndDate={stayEndDate}
           guest={guest ?? undefined}
           linkedUserId={guest ? undefined : userId}
           onSuccess={handleSuccess}

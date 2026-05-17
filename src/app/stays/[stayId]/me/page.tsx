@@ -25,6 +25,8 @@ export default async function MyStayGuestPage({ params }: Props) {
 
   if (stayError || !stay) notFound()
 
+  const currentStay = stay as MyStay
+
   const { data: guest } = await supabase
     .from('guests_summary')
     .select('*')
@@ -35,11 +37,13 @@ export default async function MyStayGuestPage({ params }: Props) {
     .maybeSingle()
 
   return (
-    <StayLayout stay={stay as MyStay}>
+    <StayLayout stay={currentStay}>
       <MyStayGuestPageClient
         stayId={params.stayId}
         userId={user.id}
         guest={(guest ?? null) as GuestSummary | null}
+        stayStartDate={currentStay.start_date ?? null}
+        stayEndDate={currentStay.end_date ?? null}
       />
     </StayLayout>
   )
