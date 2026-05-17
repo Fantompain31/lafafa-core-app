@@ -135,6 +135,7 @@ export function StayHome({
     useState<GuestResponsibilities | null>(null);
   const [myResponsibilitiesError, setMyResponsibilitiesError] = useState<string | null>(null);
   const [myResponsibilitiesLoading, setMyResponsibilitiesLoading] = useState(false);
+  const [responsibilitiesModalOpen, setResponsibilitiesModalOpen] = useState(false);
   const confirmed = participants.filter((p) => p.status === "confirmed");
   const total = participants.length;
 
@@ -220,6 +221,8 @@ export function StayHome({
 
   if (!guestId) {
     setMyResponsibilities(null);
+    setMyResponsibilitiesError(null);
+    setMyResponsibilitiesLoading(false);
     return;
   }
 
@@ -227,6 +230,9 @@ export function StayHome({
   let cancelled = false;
 
   async function loadResponsibilities() {
+    setMyResponsibilitiesLoading(true);
+    setMyResponsibilitiesError(null);
+
     try {
       const data = await getGuestResponsibilities(stay.id, resolvedGuestId);
 
@@ -237,6 +243,15 @@ export function StayHome({
       if (!cancelled) {
         console.error('Failed to load home responsibilities', err);
         setMyResponsibilities(null);
+        setMyResponsibilitiesError(
+          err instanceof Error
+            ? err.message
+            : "Impossible de charger votre récapitulatif.",
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setMyResponsibilitiesLoading(false);
       }
     }
   }
@@ -559,7 +574,9 @@ export function StayHome({
                 responsibilities={myResponsibilities}
                 loading={myResponsibilitiesLoading}
                 error={myResponsibilitiesError}
-                onOpen={() => router.push(`/stays/${stay.id}/logistique`)}
+                isOpen={responsibilitiesModalOpen}
+                onOpen={() => setResponsibilitiesModalOpen(true)}
+                onClose={() => setResponsibilitiesModalOpen(false)}
               />
             )}
           </div>
@@ -689,18 +706,32 @@ export function StayHome({
 }
 
 
+type HomeResponsibilityRow = {
+  id: string;
+  type: string;
+  title: string;
+  subtitle?: string | null;
+  status?: string | null;
+  group: string;
+  icon: string;
+};
+
 function HomeResponsibilitiesCard({
   responsibilities,
   loading,
   error,
+  isOpen,
   onOpen,
+  onClose,
 }: {
   responsibilities: GuestResponsibilities | null;
   loading: boolean;
   error: string | null;
+  isOpen: boolean;
   onOpen: () => void;
+  onClose: () => void;
 }) {
-  const rows = responsibilities
+  const rows: HomeResponsibilityRow[] = responsibilities
     ? [
         ...responsibilities.logistics.map((item) => ({
           ...item,
@@ -719,6 +750,9 @@ function HomeResponsibilitiesCard({
         })),
       ]
     : [];
+
+  const previewRows = rows.slice(0, 2);
+  const remainingCount = Math.max(0, rows.length - previewRows.length);
 
   return (
     <div className="sh-responsibilities-card">
@@ -740,7 +774,7 @@ function HomeResponsibilitiesCard({
         <p className="sh-empty-hint">Rien ne vous est attribué pour le moment.</p>
       ) : (
         <div className="sh-responsibilities-list">
-          {rows.slice(0, 5).map((item) => (
+          {previewRows.map((item) => (
             <button
               key={`${item.type}-${item.id}`}
               type="button"
@@ -760,13 +794,73 @@ function HomeResponsibilitiesCard({
               )}
             </button>
           ))}
-          {rows.length > 5 && (
+
+          {remainingCount > 0 && (
             <button type="button" className="sh-responsibilities-more" onClick={onOpen}>
-              Voir les {rows.length - 5} autre{rows.length - 5 > 1 ? "s" : ""}
+              Voir les {remainingCount} autre{remainingCount > 1 ? "s" : ""}
             </button>
           )}
         </div>
       )}
+
+      {isOpen && rows.length > 0 && (
+        <ResponsibilitiesDetailModal rows={rows} onClose={onClose} />
+      )}
+    </div>
+  );
+}
+
+function ResponsibilitiesDetailModal({
+  rows,
+  onClose,
+}: {
+  rows: HomeResponsibilityRow[];
+  onClose: () => void;
+}) {
+  const groups = ["Logistique", "Couchage", "Planning"]
+    .map((group) => ({
+      group,
+      items: rows.filter((row) => row.group === group),
+    }))
+    .filter((entry) => entry.items.length > 0);
+
+  return (
+    <div className="sh-modal-overlay" onClick={onClose}>
+      <div className="sh-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sh-modal-header">
+          <div>
+            <p className="sh-section-label">À faire / à apporter</p>
+            <h2>Votre récapitulatif complet</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fermer">
+            ×
+          </button>
+        </div>
+
+        <div className="sh-modal-content">
+          {groups.map(({ group, items }) => (
+            <section key={group} className="sh-modal-group">
+              <h3>{group}</h3>
+              <div className="sh-modal-list">
+                {items.map((item) => (
+                  <div key={`${item.type}-${item.id}`} className="sh-modal-row">
+                    <span className="sh-responsibility-icon">{item.icon}</span>
+                    <span className="sh-responsibility-body">
+                      <span className="sh-responsibility-title">{item.title}</span>
+                      {item.subtitle && (
+                        <span className="sh-responsibility-meta">{item.subtitle}</span>
+                      )}
+                    </span>
+                    {item.status && (
+                      <span className="sh-responsibility-status">{item.status}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </section>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }
