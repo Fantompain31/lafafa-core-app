@@ -6,7 +6,42 @@ import type {
   LogisticsItemFormValues,
   LogisticsSection,
   LogisticsSectionFormValues,
+  LogisticsSectionWithItems,
 } from './logistics.types';
+
+
+export async function fetchLogisticsSections(stayId: string): Promise<LogisticsSectionWithItems[]> {
+  const supabase = createClient();
+
+  const { data: sections, error: sectionsError } = await supabase
+    .from('logistics_sections')
+    .select('*')
+    .eq('stay_id', stayId)
+    .eq('is_hidden', false)
+    .order('created_at', { ascending: true });
+
+  if (sectionsError) throw new Error(sectionsError.message);
+
+  const safeSections = (sections ?? []) as LogisticsSection[];
+  const sectionIds = safeSections.map((section) => section.id);
+
+  if (sectionIds.length === 0) return [];
+
+  const { data: items, error: itemsError } = await supabase
+    .from('logistics_items')
+    .select('*')
+    .in('section_id', sectionIds)
+    .order('created_at', { ascending: true });
+
+  if (itemsError) throw new Error(itemsError.message);
+
+  const safeItems = (items ?? []) as LogisticsItem[];
+
+  return safeSections.map((section) => ({
+    ...section,
+    items: safeItems.filter((item) => item.section_id === section.id),
+  }));
+}
 
 export async function createManualLogisticsSection(
   stayId: string,

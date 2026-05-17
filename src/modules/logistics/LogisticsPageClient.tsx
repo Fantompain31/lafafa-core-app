@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type {
   LogisticsGuest,
   LogisticsItem,
@@ -23,6 +23,7 @@ import {
   assignLogisticsItem,
   toggleLogisticsItem,
   deleteLogisticsItem,
+  fetchLogisticsSections,
 } from "./logistics.service";
 import LogisticsSectionCard from "./components/LogisticsSectionCard";
 import LogisticsSectionDetailModal from "./components/LogisticsSectionDetailModal";
@@ -102,6 +103,47 @@ export default function LogisticsPageClient({
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("all");
   const [search, setSearch] = useState("");
   const [openedSectionId, setOpenedSectionId] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function refreshSections() {
+      try {
+        const freshSections = await fetchLogisticsSections(stayId);
+        if (cancelled) return;
+
+        setSections(freshSections);
+        setOpenedSectionId((current) =>
+          current && freshSections.some((section) => section.id === current)
+            ? current
+            : null,
+        );
+      } catch (error) {
+        console.warn('Impossible de rafraîchir la logistique', error);
+      }
+    }
+
+    void refreshSections();
+
+    const handleFocus = () => {
+      void refreshSections();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshSections();
+      }
+    };
+
+    window.addEventListener('focus', handleFocus);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', handleFocus);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [stayId]);
 
   const stats = useMemo(() => {
     const allItems = sections.flatMap((section) => section.items);

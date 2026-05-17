@@ -72,11 +72,6 @@ export default function LogisticsItemRow({
           {item.quantity && <span className="lg-item-qty">{item.quantity}</span>}
         </div>
         {item.notes && <p className="lg-item-notes">{item.notes}</p>}
-        {isSourceLocked && (
-          <p className="lg-item-source-note">
-            Élément créé depuis Couchage. À modifier ou supprimer depuis le module Couchage.
-          </p>
-        )}
       </div>
 
       <div className="lg-item-owner">
@@ -133,22 +128,12 @@ export default function LogisticsItemRow({
         )}
       </div>
 
-      <div className="lg-item-actions">
-        {isSourceLocked ? (
-          <span
-            className="lg-source-lock"
-            title="Élément créé depuis Couchage. À modifier depuis le module Couchage."
-            aria-label="Élément créé depuis Couchage. À modifier depuis le module Couchage."
-          >
-            🔒
-          </span>
-        ) : (
-          <>
-            <button className="lg-action-btn" type="button" onClick={() => onEdit(item)} aria-label="Modifier">✎</button>
-            <button className="lg-action-btn danger" type="button" onClick={() => onDelete(item.id)} aria-label="Supprimer">×</button>
-          </>
-        )}
-      </div>
+      {!isSourceLocked && (
+        <div className="lg-item-actions">
+          <button className="lg-action-btn" type="button" onClick={() => onEdit(item)} aria-label="Modifier">✎</button>
+          <button className="lg-action-btn danger" type="button" onClick={() => onDelete(item.id)} aria-label="Supprimer">×</button>
+        </div>
+      )}
     </div>
   );
 }

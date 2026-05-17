@@ -132,9 +132,6 @@ export default function LogisticsSectionDetailModal({
                 {section.source_type === "organization_event" && (
                   <span className="lg-source-badge">lié au planning</span>
                 )}
-                {isSourceLockedSection && (
-                  <span className="lg-source-badge">lié au couchage</span>
-                )}
               </div>
               <h2>{section.title}</h2>
             </div>
@@ -193,8 +190,8 @@ export default function LogisticsSectionDetailModal({
           </div>
         </div>
 
-        <div className="lg-detail-actions">
-          {!isSourceLockedSection && (
+        {!isSourceLockedSection && (
+          <div className="lg-detail-actions">
             <button
               className="lg-btn-primary"
               type="button"
@@ -202,8 +199,6 @@ export default function LogisticsSectionDetailModal({
             >
               + Ajouter
             </button>
-          )}
-          {!isSourceLockedSection && (
             <button
               className="lg-btn-ghost"
               type="button"
@@ -211,8 +206,6 @@ export default function LogisticsSectionDetailModal({
             >
               Modifier
             </button>
-          )}
-          {!isSourceLockedSection && (
             <button
               className="lg-btn-danger"
               type="button"
@@ -220,13 +213,8 @@ export default function LogisticsSectionDetailModal({
             >
               Masquer
             </button>
-          )}
-          {isSourceLockedSection && (
-            <p className="lg-source-lock-message">
-              Cette section vient du module Couchage. Modifiez ou supprimez les couchages depuis Couchage.
-            </p>
-          )}
-        </div>
+          </div>
+        )}
 
         {section.items.length > 0 && (
           <div className="lg-detail-filter-block">

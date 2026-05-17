@@ -18,6 +18,14 @@ function getInitials(guest: LogisticsGuest) {
   return [guest.first_name?.[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase();
 }
 
+
+function isAccommodationLinkedSection(section: LogisticsSectionWithItems) {
+  return (
+    section.source_type === 'accommodation_bed' ||
+    section.items.some(item => item.source_type === 'accommodation_bed' || Boolean(item.notes?.toLowerCase().includes('module couchage')))
+  );
+}
+
 function getAssignedGuests(section: LogisticsSectionWithItems, guests: LogisticsGuest[]) {
   const ids = Array.from(new Set(section.items.map(item => item.assigned_guest_id).filter(Boolean))) as string[];
   return ids
@@ -41,6 +49,7 @@ export default function LogisticsSectionCard({
   const previewItems = todoItems.slice(0, 4);
   const extraTodoCount = Math.max(0, todoItems.length - previewItems.length);
   const assignedGuests = getAssignedGuests(section, guests);
+  const isSourceLockedSection = isAccommodationLinkedSection(section);
 
   return (
     <section
@@ -109,11 +118,13 @@ export default function LogisticsSectionCard({
           </div>
         </div>
 
-        <div className="lg-compact-actions">
-          <button className="lg-action-btn" type="button" onClick={() => onAddItem(section.id)} aria-label="Ajouter un élément">+</button>
-          <button className="lg-action-btn" type="button" onClick={() => onEditSection(section)} aria-label="Modifier la section">✎</button>
-          <button className="lg-action-btn danger" type="button" onClick={() => onHideSection(section.id)} aria-label="Masquer la section">×</button>
-        </div>
+        {!isSourceLockedSection && (
+          <div className="lg-compact-actions">
+            <button className="lg-action-btn" type="button" onClick={() => onAddItem(section.id)} aria-label="Ajouter un élément">+</button>
+            <button className="lg-action-btn" type="button" onClick={() => onEditSection(section)} aria-label="Modifier la section">✎</button>
+            <button className="lg-action-btn danger" type="button" onClick={() => onHideSection(section.id)} aria-label="Masquer la section">×</button>
+          </div>
+        )}
       </div>
     </section>
   );

@@ -59,7 +59,7 @@ function guestName(guest: AccommodationGuest | undefined) {
 
 export default function AccommodationPageClient({ stayId, initialRooms, guests }: Props) {
   const [rooms, setRooms] = useState(initialRooms)
-  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(initialRooms[0]?.id ?? null)
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null)
   const [modalMode, setModalMode] = useState<ModalMode>(null)
   const [editingBed, setEditingBed] = useState<AccommodationBed | null>(null)
   const [roomForm, setRoomForm] = useState<AccommodationRoomFormValues>(emptyRoomForm())
@@ -334,9 +334,9 @@ export default function AccommodationPageClient({ stayId, initialRooms, guests }
         </div>
       )}
 
-      {selectedRoom && (
-        <div className="ac-detail-overlay" onClick={() => setSelectedRoomId(null)}>
-          <section className="ac-detail-modal" onClick={(event) => event.stopPropagation()}>
+      {selectedRoom && modalMode === null && (
+        <div className="ac-modal-overlay ac-room-detail-overlay" onClick={() => setSelectedRoomId(null)}>
+          <div className="ac-modal ac-room-detail-modal" onClick={(event) => event.stopPropagation()}>
             <div className="ac-detail-header">
               <div>
                 <p className="ac-eyebrow">Pièce</p>
@@ -346,14 +346,7 @@ export default function AccommodationPageClient({ stayId, initialRooms, guests }
               <div className="ac-detail-actions">
                 <button className="ac-btn-ghost" onClick={() => openEditRoom(selectedRoom)}>Renommer</button>
                 <button className="ac-btn-danger" onClick={() => void handleDeleteRoom(selectedRoom)}>Supprimer</button>
-                <button
-                  className="ac-detail-close"
-                  type="button"
-                  onClick={() => setSelectedRoomId(null)}
-                  aria-label="Fermer"
-                >
-                  ×
-                </button>
+                <button className="ac-detail-close" type="button" onClick={() => setSelectedRoomId(null)} aria-label="Fermer">×</button>
               </div>
             </div>
 
@@ -373,7 +366,7 @@ export default function AccommodationPageClient({ stayId, initialRooms, guests }
             </div>
 
             <button className="ac-add-bed" onClick={() => openAddBed(selectedRoom)}>+ Ajouter un couchage</button>
-          </section>
+          </div>
         </div>
       )}
 
