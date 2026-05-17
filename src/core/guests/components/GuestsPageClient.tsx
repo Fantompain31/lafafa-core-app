@@ -77,6 +77,18 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
     void reload()
   }
 
+
+  async function handleSetCoOrganizer(guest: GuestSummary, enabled: boolean) {
+    const verb = enabled ? 'nommer co-organisateur' : 'retirer le rôle co-organisateur de';
+    if (!confirm(`Voulez-vous ${verb} ${guest.first_name} ?`)) return;
+    try {
+      await guestsService.setGuestCoOrganizer(guest.id, enabled);
+      alert(enabled ? 'Co-organisateur ajouté.' : 'Rôle co-organisateur retiré.');
+    } catch (e: unknown) {
+      alert(e instanceof Error ? e.message : 'Impossible de modifier le rôle.');
+    }
+  }
+
   async function handleRemoveGuest(guest: GuestSummary) {
     if (!confirm(
       `Supprimer définitivement ${guest.first_name} du séjour ?\n\n` +
@@ -202,6 +214,8 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
               onCopyLink={handleCopyLink}
               onRevoke={handleRevoke}
               onRemove={isOwner ? handleRemoveGuest : undefined}
+              onMakeCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, true) : undefined}
+              onRemoveCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, false) : undefined}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />
           ))}

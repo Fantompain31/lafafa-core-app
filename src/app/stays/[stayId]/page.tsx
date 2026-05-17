@@ -7,6 +7,7 @@ import type {
   StayHomeEvent,
   StayHomeLogisticsItem,
   StayHomeLogisticsSection,
+  StayHomePracticalInfo,
 } from '@/core/stays/components/StayHome'
 
 type Props = { params: { stayId: string } }
@@ -49,6 +50,7 @@ export default async function StayPage({ params }: Props) {
     eventsResult,
     sectionsResult,
     itemsResult,
+    practicalInfosResult,
   ] = await Promise.all([
     supabase
       .from('guests_summary')
@@ -88,6 +90,12 @@ export default async function StayPage({ params }: Props) {
       .from('logistics_items')
       .select('id, section_id, is_checked, assigned_guest_id')
       .eq('stay_id', params.stayId),
+
+    supabase
+      .from('stay_practical_infos')
+      .select('id, stay_id, label, value, kind, position')
+      .eq('stay_id', params.stayId)
+      .order('position', { ascending: true }),
   ])
 
   const myGuest = (myGuestResult.data ?? null) as GuestSummary | null
@@ -95,6 +103,7 @@ export default async function StayPage({ params }: Props) {
   const programEvents = (eventsResult.data ?? []) as StayHomeEvent[]
   const logisticsSections = (sectionsResult.data ?? []) as StayHomeLogisticsSection[]
   const logisticsItems = (itemsResult.data ?? []) as StayHomeLogisticsItem[]
+  const practicalInfos = (practicalInfosResult.data ?? []) as StayHomePracticalInfo[]
 
   return (
     <StayLayout stay={typedStay}>
@@ -106,6 +115,7 @@ export default async function StayPage({ params }: Props) {
         programEvents={programEvents}
         logisticsSections={logisticsSections}
         logisticsItems={logisticsItems}
+        practicalInfos={practicalInfos}
       />
     </StayLayout>
   )

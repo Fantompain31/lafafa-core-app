@@ -6,7 +6,7 @@ import type { GuestSummary, MyStay } from '@/shared/types/database.types'
 
 type Props = { params: { stayId: string } }
 
-export const metadata = { title: 'Invités' }
+export const metadata = { title: 'Membres' }
 
 export default async function GuestsPage({ params }: Props) {
   const supabase = createClient()
@@ -20,7 +20,13 @@ export default async function GuestsPage({ params }: Props) {
 
   return (
     <StayLayout stay={stay as MyStay}>
-      <GuestsPageClient stayId={params.stayId} initialGuests={(guests ?? []) as GuestSummary[]} myRole={(stay as MyStay).my_role} />
+      <GuestsPageClient
+  stayId={params.stayId}
+  initialGuests={(guests ?? []) as GuestSummary[]}
+  myRole={(stay as MyStay).my_role}
+  stayStartDate={(stay as MyStay).start_date ?? null}
+  stayEndDate={(stay as MyStay).end_date ?? null}
+/>
     </StayLayout>
   )
 }

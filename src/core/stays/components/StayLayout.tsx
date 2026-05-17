@@ -73,6 +73,19 @@ const IconBed = () => (
     <path d="M14 13V9a2 2 0 0 1 2-2h1a4 4 0 0 1 4 4v2" />
   </svg>
 );
+const IconInfo = () => (
+  <svg viewBox="0 0 24 24">
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <line x1="12" y1="8" x2="12.01" y2="8" />
+  </svg>
+);
+const IconChecklist = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M9 11l3 3L22 4" />
+    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+  </svg>
+);
 const IconPhoto = () => (
   <svg viewBox="0 0 24 24">
     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -194,6 +207,8 @@ export function StayLayout({
     },
     { label: "Logistique", href: `${baseHref}/logistique`, icon: <IconCart /> },
     { label: "Couchage", href: `${baseHref}/couchage`, icon: <IconBed /> },
+    { label: "Infos pratiques", href: `${baseHref}/infos`, icon: <IconInfo /> },
+    { label: "Ma liste", href: `${baseHref}/personal-list`, icon: <IconChecklist /> },
     { label: "Budget", href: `${baseHref}/budget`, icon: <IconWallet /> },
     // Module prévu pour plus tard : on garde l'entrée dans la configuration,
     // mais on ne l'affiche pas tant que le module n'est pas développé.

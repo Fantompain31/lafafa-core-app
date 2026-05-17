@@ -9,11 +9,13 @@ type Props = {
   onCopyLink?: (guest: GuestSummary) => void
   onRevoke?: (guest: GuestSummary) => void
   onRemove?: (guest: GuestSummary) => void
+  onMakeCoOrganizer?: (guest: GuestSummary) => void
+  onRemoveCoOrganizer?: (guest: GuestSummary) => void
   isOrganizer?: boolean
   isOwner?: boolean
 }
 
-export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, isOrganizer, isOwner }: Props) {
+export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, onMakeCoOrganizer, onRemoveCoOrganizer, isOrganizer, isOwner }: Props) {
   const initials = [guest.first_name[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase()
   const isLinked = guest.linked_user_id !== null
   const hasActiveInvitation = guest.active_invitation_id !== null || guest.active_link_id !== null
@@ -98,6 +100,25 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRe
           <div className="mt-3 space-y-1 text-xs text-neutral-500">
             {guest.arrival_at && <p>Arrivée : {formatDateTime(guest.arrival_at)}</p>}
             {guest.departure_at && <p>Départ : {formatDateTime(guest.departure_at)}</p>}
+          </div>
+        )}
+
+        {isOwner && guest.linked_user_id && (
+          <div className="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3" onClick={e => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={() => onMakeCoOrganizer?.(guest)}
+              className="rounded-lg border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-50"
+            >
+              Nommer co-organisateur
+            </button>
+            <button
+              type="button"
+              onClick={() => onRemoveCoOrganizer?.(guest)}
+              className="rounded-lg border border-neutral-200 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
+            >
+              Retirer co-organisateur
+            </button>
           </div>
         )}
 

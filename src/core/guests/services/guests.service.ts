@@ -219,4 +219,10 @@ export const guestsService = {
     const { error } = await supabase.rpc('leave_stay', { p_stay_id: stayId })
     if (error) throw new Error(error.message)
   },
+
+  async setGuestCoOrganizer(guestId: string, enabled: boolean) {
+    const supabase = createClient()
+    const { error } = await supabase.rpc('set_guest_co_organizer', { p_guest_id: guestId, p_enabled: enabled })
+    if (error) throw new Error(error.message)
+  },
 }
