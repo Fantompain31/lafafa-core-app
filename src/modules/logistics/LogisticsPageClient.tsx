@@ -106,6 +106,7 @@ export default function LogisticsPageClient({
   const [statusFilter, setStatusFilter] = useState<StatusFilterKey>("all");
   const [search, setSearch] = useState("");
   const [openedSectionId, setOpenedSectionId] = useState<string | null>(null);
+  const [openedPersonKey, setOpenedPersonKey] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("sections");
   const [templatesOpen, setTemplatesOpen] = useState(false);
 
@@ -540,13 +541,18 @@ export default function LogisticsPageClient({
       sections.some((section) => section.section_type === filter),
   );
 
-  const itemsByPerson = useMemo(() => {
-    const rows = sections.flatMap((section) =>
-      section.items.map((item) => ({ section, item })),
-    );
-
+  function buildPersonGroups(
+    rows: Array<{ section: LogisticsSectionWithItems; item: LogisticsItem }>,
+  ) {
     const guestMap = new Map(guests.map((guest) => [guest.id, guest]));
-    const groups = new Map<string, { label: string; items: typeof rows }>();
+    const groups = new Map<
+      string,
+      {
+        label: string;
+        guest: LogisticsGuest | null;
+        items: Array<{ section: LogisticsSectionWithItems; item: LogisticsItem }>;
+      }
+    >();
 
     for (const row of rows) {
       const guest = row.item.assigned_guest_id
@@ -557,14 +563,39 @@ export default function LogisticsPageClient({
         ? `${guest.first_name}${guest.last_name ? ` ${guest.last_name}` : ""}`
         : "Non attribué";
 
-      if (!groups.has(key)) groups.set(key, { label, items: [] });
+      if (!groups.has(key)) groups.set(key, { label, guest, items: [] });
       groups.get(key)!.items.push(row);
     }
 
     return Array.from(groups.entries())
       .map(([key, value]) => ({ key, ...value }))
-      .sort((a, b) => (a.key === "unassigned" ? 1 : b.key === "unassigned" ? -1 : a.label.localeCompare(b.label)));
+      .sort((a, b) =>
+        a.key === "unassigned"
+          ? 1
+          : b.key === "unassigned"
+            ? -1
+            : a.label.localeCompare(b.label),
+      );
+  }
+
+  const itemsByPerson = useMemo(() => {
+    const rows = sections.flatMap((section) =>
+      section.items.map((item) => ({ section, item })),
+    );
+
+    return buildPersonGroups(rows);
   }, [guests, sections]);
+
+  const filteredItemsByPerson = useMemo(
+    () => buildPersonGroups(filteredItems),
+    [filteredItems, guests],
+  );
+
+  const openedPersonGroup = openedPersonKey
+    ? (filteredItemsByPerson.find((group) => group.key === openedPersonKey) ??
+      itemsByPerson.find((group) => group.key === openedPersonKey) ??
+      null)
+    : null;
 
   function buildShareSummary() {
     const lines = [`Résumé logistique du séjour`, ""];
@@ -769,46 +800,88 @@ export default function LogisticsPageClient({
           </div>
         </div>
       ) : viewMode === "people" ? (
-        <div className="lg-people-list">
-          <div className="lg-general-list-header">
-            <div>
-              <p className="lg-eyebrow">Vue par personne</p>
-              <h2>Qui apporte quoi ?</h2>
-            </div>
-            <span>{itemsByPerson.length} groupe{itemsByPerson.length > 1 ? "s" : ""}</span>
+        filteredItemsByPerson.length === 0 ? (
+          <div className="lg-empty">
+            <div className="lg-empty-icon">🔎</div>
+            <p>Aucune personne avec ces filtres.</p>
+            <button
+              className="lg-btn-ghost"
+              onClick={() => {
+                setSearch("");
+                setActiveFilter("all");
+                setStatusFilter("all");
+              }}
+            >
+              Réinitialiser
+            </button>
           </div>
+        ) : (
+          <div className="lg-people-list">
+            <div className="lg-general-list-header">
+              <div>
+                <p className="lg-eyebrow">Vue par personne</p>
+                <h2>Qui apporte quoi ?</h2>
+              </div>
+              <span>
+                {filteredItemsByPerson.length} personne
+                {filteredItemsByPerson.length > 1 ? "s" : ""}
+              </span>
+            </div>
 
-          {itemsByPerson.map((group) => (
-            <section key={group.key} className="lg-person-group">
-              <div className="lg-person-group-head">
-                <h3>{group.label}</h3>
-                <span>{group.items.filter(({ item }) => !item.is_checked).length} à prévoir</span>
-              </div>
-              <div className="lg-items-list">
-                {group.items.map(({ section, item }) => (
-                  <LogisticsItemRow
-                    key={item.id}
-                    item={item}
-                    guests={guests}
-                    currentGuestId={currentGuestId}
-                    onEdit={openEditItem}
-                    onAssign={handleAssignItem}
-                    onTake={handleTakeItem}
-                    onToggle={handleToggleItem}
-                    onDelete={handleDeleteItem}
-                    onQuantityChange={handleQuantityChange}
-                    isSourceLocked={
-                      item.source_type === "accommodation_bed" ||
-                      section.source_type === "accommodation_bed" ||
-                      Boolean(item.notes?.toLowerCase().includes("module couchage"))
-                    }
-                    sectionTitle={section.title}
-                  />
-                ))}
-              </div>
-            </section>
-          ))}
-        </div>
+            {filteredItemsByPerson.map((group) => {
+              const todoItems = group.items.filter(({ item }) => !item.is_checked);
+              const doneItems = group.items.length - todoItems.length;
+              const previewItems = todoItems.slice(0, 3);
+              const extraCount = Math.max(0, todoItems.length - previewItems.length);
+
+              return (
+                <button
+                  key={group.key}
+                  type="button"
+                  className="lg-person-card"
+                  onClick={() => setOpenedPersonKey(group.key)}
+                >
+                  <span
+                    className={`lg-person-avatar${group.guest ? "" : " unassigned"}`}
+                    style={{ background: group.guest?.color ?? undefined }}
+                  >
+                    {group.guest?.linked_user_avatar_url ? (
+                      <img src={group.guest.linked_user_avatar_url} alt="" />
+                    ) : group.guest ? (
+                      group.label.slice(0, 1).toUpperCase()
+                    ) : (
+                      "?"
+                    )}
+                  </span>
+
+                  <span className="lg-person-card-body">
+                    <span className="lg-person-card-title-row">
+                      <strong>{group.label}</strong>
+                      <em>{todoItems.length} à prévoir</em>
+                    </span>
+                    <span className="lg-person-preview">
+                      {todoItems.length === 0
+                        ? "Tout est prêt"
+                        : previewItems
+                            .map(
+                              ({ item }) =>
+                                `${item.label}${item.quantity ? ` · ${item.quantity}` : ""}`,
+                            )
+                            .join(", ")}
+                      {extraCount > 0 ? ` +${extraCount} autre${extraCount > 1 ? "s" : ""}` : ""}
+                    </span>
+                    <span className="lg-person-card-meta">
+                      {group.items.length} élément{group.items.length > 1 ? "s" : ""}
+                      {doneItems > 0 ? ` · ${doneItems} prêt${doneItems > 1 ? "s" : ""}` : ""}
+                    </span>
+                  </span>
+
+                  <span className="lg-person-card-arrow">›</span>
+                </button>
+              );
+            })}
+          </div>
+        )
       ) : viewMode === "list" ? (
         filteredItems.length === 0 ? (
           <div className="lg-empty">
@@ -911,6 +984,59 @@ export default function LogisticsPageClient({
         </div>
       )}
 
+
+      {openedPersonGroup && (
+        <div
+          className="lg-detail-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Apports de ${openedPersonGroup.label}`}
+        >
+          <div className="lg-detail-panel lg-person-detail-panel">
+            <div className="lg-detail-header">
+              <div>
+                <p className="lg-eyebrow">Apports</p>
+                <h2>{openedPersonGroup.label}</h2>
+                <p className="lg-person-detail-subtitle">
+                  {openedPersonGroup.items.filter(({ item }) => !item.is_checked).length} à prévoir · {openedPersonGroup.items.length} élément
+                  {openedPersonGroup.items.length > 1 ? "s" : ""}
+                </p>
+              </div>
+              <button
+                className="lg-detail-close"
+                type="button"
+                onClick={() => setOpenedPersonKey(null)}
+                aria-label="Fermer"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="lg-detail-items-list">
+              {openedPersonGroup.items.map(({ section, item }) => (
+                <LogisticsItemRow
+                  key={item.id}
+                  item={item}
+                  guests={guests}
+                  currentGuestId={currentGuestId}
+                  onEdit={openEditItem}
+                  onAssign={handleAssignItem}
+                  onTake={handleTakeItem}
+                  onToggle={handleToggleItem}
+                  onDelete={handleDeleteItem}
+                  onQuantityChange={handleQuantityChange}
+                  isSourceLocked={
+                    item.source_type === "accommodation_bed" ||
+                    section.source_type === "accommodation_bed" ||
+                    Boolean(item.notes?.toLowerCase().includes("module couchage"))
+                  }
+                  sectionTitle={section.title}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
       {openedSection && openedSectionProgress && (
         <LogisticsSectionDetailModal
           section={openedSection}
