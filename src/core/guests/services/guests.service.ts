@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client'
-import type { FoodPreferences, GuestCategory, GuestStatus, GuestSummary } from '@/shared/types/database.types'
+import type { FoodPreferences, GuestCategory, GuestStatus, GuestSummary, MemberRole } from '@/shared/types/database.types'
 import { dateTimeLocalToUtcIso } from '@/shared/utils/dates'
 import { emptyToNull, omitUndefined } from '@/shared/utils/object'
 import { assertDateTimeRange, requireNonEmpty } from '@/shared/utils/validation'
@@ -53,6 +53,22 @@ function normalizeGuestPayload(payload: GuestPayload) {
 }
 
 export const guestsService = {
+
+  async getStayMemberRoles(stayId: string): Promise<Record<string, MemberRole>> {
+    const supabase = createClient()
+    const { data, error } = await supabase
+      .from('stay_members')
+      .select('user_id, role')
+      .eq('stay_id', stayId)
+    if (error) throw new Error(error.message)
+
+    return Object.fromEntries(
+      (data ?? [])
+        .filter((member): member is { user_id: string; role: MemberRole } => Boolean(member.user_id && member.role))
+        .map(member => [member.user_id, member.role])
+    )
+  },
+
   async getGuests(stayId: string): Promise<GuestSummary[]> {
     const supabase = createClient()
     const { data, error } = await supabase

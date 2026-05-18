@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { GuestSummary, MemberRole } from '@/shared/types/database.types'
 import { permissions } from '@/core/permissions/permissions'
 import { guestsService } from '@/core/guests/services/guests.service'
@@ -27,13 +27,32 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteGuestId, setInviteGuestId] = useState<string | undefined>(undefined)
   const [copiedGuestId, setCopiedGuestId] = useState<string | null>(null)
+  const [memberRoles, setMemberRoles] = useState<Record<string, MemberRole>>({})
 
   const isOrganizer = permissions.canManageGuests(myRole)
   const isOwner     = myRole === 'owner'
 
-  async function reload() {
-    setGuests(await guestsService.getGuests(stayId))
+  async function loadMemberRoles() {
+    try {
+      setMemberRoles(await guestsService.getStayMemberRoles(stayId))
+    } catch {
+      // Si la vue/table des rôles n'est pas lisible pour l'utilisateur,
+      // la page reste utilisable sans bloquer la liste des membres.
+    }
   }
+
+  async function reload() {
+    const [nextGuests, nextRoles] = await Promise.all([
+      guestsService.getGuests(stayId),
+      guestsService.getStayMemberRoles(stayId).catch(() => memberRoles),
+    ])
+    setGuests(nextGuests)
+    setMemberRoles(nextRoles)
+  }
+
+  useEffect(() => {
+    void loadMemberRoles()
+  }, [stayId])
 
   function handleSuccess() {
     setView('list')
@@ -83,7 +102,13 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
     if (!confirm(`Voulez-vous ${verb} ${guest.first_name} ?`)) return;
     try {
       await guestsService.setGuestCoOrganizer(guest.id, enabled);
-      alert(enabled ? 'Co-organisateur ajouté.' : 'Rôle co-organisateur retiré.');
+      if (guest.linked_user_id) {
+        setMemberRoles(prev => ({
+          ...prev,
+          [guest.linked_user_id as string]: enabled ? 'co_organizer' : 'viewer',
+        }))
+      }
+      void reload()
     } catch (e: unknown) {
       alert(e instanceof Error ? e.message : 'Impossible de modifier le rôle.');
     }
@@ -216,6 +241,7 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
               onRemove={isOwner ? handleRemoveGuest : undefined}
               onMakeCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, true) : undefined}
               onRemoveCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, false) : undefined}
+              memberRole={guest.linked_user_id ? memberRoles[guest.linked_user_id] ?? null : null}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />
           ))}

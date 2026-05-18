@@ -1,4 +1,4 @@
-import type { GuestSummary } from '@/shared/types/database.types'
+import type { GuestSummary, MemberRole } from '@/shared/types/database.types'
 import { formatDateTime } from '@/shared/utils/dates'
 import { GuestCategoryBadge, GuestStatusBadge } from './GuestBadge'
 
@@ -13,12 +13,23 @@ type Props = {
   onRemoveCoOrganizer?: (guest: GuestSummary) => void
   isOrganizer?: boolean
   isOwner?: boolean
+  memberRole?: MemberRole | null
 }
 
-export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, onMakeCoOrganizer, onRemoveCoOrganizer, isOrganizer, isOwner }: Props) {
+export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, onMakeCoOrganizer, onRemoveCoOrganizer, isOrganizer, isOwner, memberRole }: Props) {
   const initials = [guest.first_name[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase()
   const isLinked = guest.linked_user_id !== null
   const hasActiveInvitation = guest.active_invitation_id !== null || guest.active_link_id !== null
+  const isGuestOwner = memberRole === 'owner'
+  const isGuestCoOrganizer = memberRole === 'co_organizer'
+
+  const roleLabel = isGuestOwner
+    ? 'Organisateur'
+    : isGuestCoOrganizer
+      ? 'Co-organisateur'
+      : isLinked
+        ? 'Participant'
+        : null
 
   const content = (
     <>
@@ -42,6 +53,17 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRe
             <div className="mt-1 flex flex-wrap items-center gap-2">
               <GuestCategoryBadge category={guest.category} />
               <GuestStatusBadge status={guest.status} />
+              {roleLabel && (
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                  isGuestOwner
+                    ? 'bg-amber-50 text-amber-700'
+                    : isGuestCoOrganizer
+                      ? 'bg-purple-50 text-purple-700'
+                      : 'bg-neutral-100 text-neutral-600'
+                }`}>
+                  {roleLabel}
+                </span>
+              )}
               {/* Badge lien envoyé */}
               {!isLinked && hasActiveInvitation && (
                 <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
@@ -103,22 +125,25 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRe
           </div>
         )}
 
-        {isOwner && guest.linked_user_id && (
+        {isOwner && guest.linked_user_id && !isGuestOwner && (
           <div className="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3" onClick={e => e.stopPropagation()}>
-            <button
-              type="button"
-              onClick={() => onMakeCoOrganizer?.(guest)}
-              className="rounded-lg border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-50"
-            >
-              Nommer co-organisateur
-            </button>
-            <button
-              type="button"
-              onClick={() => onRemoveCoOrganizer?.(guest)}
-              className="rounded-lg border border-neutral-200 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
-            >
-              Retirer co-organisateur
-            </button>
+            {isGuestCoOrganizer ? (
+              <button
+                type="button"
+                onClick={() => onRemoveCoOrganizer?.(guest)}
+                className="rounded-lg border border-neutral-200 px-2.5 py-1 text-xs text-neutral-600 hover:bg-neutral-50"
+              >
+                Retirer co-organisateur
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onMakeCoOrganizer?.(guest)}
+                className="rounded-lg border border-amber-200 px-2.5 py-1 text-xs text-amber-700 hover:bg-amber-50"
+              >
+                Nommer co-organisateur
+              </button>
+            )}
           </div>
         )}
 
