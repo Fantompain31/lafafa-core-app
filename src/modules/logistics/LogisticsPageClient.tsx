@@ -607,7 +607,7 @@ export default function LogisticsPageClient({
         </div>
 
         <div className="lg-toolbar-right">
-          <div className="lg-view-toggle" aria-label="Choix de vue">
+          <div className="lg-view-toggle lg-toolbar-tabs" aria-label="Choix de vue">
             <button
               type="button"
               className={`lg-view-btn${viewMode === "sections" ? " active" : ""}`}
@@ -620,28 +620,34 @@ export default function LogisticsPageClient({
               className={`lg-view-btn${viewMode === "list" ? " active" : ""}`}
               onClick={() => setViewMode("list")}
             >
-              Liste générale
+              <span className="lg-label-desktop">Liste générale</span>
+              <span className="lg-label-mobile">Liste</span>
             </button>
             <button
               type="button"
               className={`lg-view-btn${viewMode === "people" ? " active" : ""}`}
               onClick={() => setViewMode("people")}
             >
-              Qui apporte quoi ?
+              <span className="lg-label-desktop">Qui apporte quoi ?</span>
+              <span className="lg-label-mobile">Apports</span>
             </button>
           </div>
-          <button className="lg-btn-ghost" onClick={handleCopyShareSummary}>
-            Copier résumé
-          </button>
-          <button className="lg-btn-ghost" onClick={handleShareWhatsApp}>
-            WhatsApp
-          </button>
-          <button className="lg-btn-ghost" onClick={() => setTemplatesOpen(true)}>
-            Modèles
-          </button>
-          <button className="lg-btn-primary" onClick={openCreateSection}>
-            + Ajouter
-          </button>
+
+          <div className="lg-toolbar-actions" aria-label="Actions logistique">
+            <button className="lg-btn-ghost" onClick={handleCopyShareSummary}>
+              <span className="lg-label-desktop">Copier résumé</span>
+              <span className="lg-label-mobile">Copier</span>
+            </button>
+            <button className="lg-btn-ghost" onClick={handleShareWhatsApp}>
+              WhatsApp
+            </button>
+            <button className="lg-btn-ghost" onClick={() => setTemplatesOpen(true)}>
+              Modèles
+            </button>
+            <button className="lg-btn-primary" onClick={openCreateSection}>
+              + Ajouter
+            </button>
+          </div>
         </div>
       </div>
 
