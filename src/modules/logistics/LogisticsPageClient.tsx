@@ -556,7 +556,7 @@ export default function LogisticsPageClient({
 
     for (const row of rows) {
       const guest = row.item.assigned_guest_id
-        ? guestMap.get(row.item.assigned_guest_id)
+        ? guestMap.get(row.item.assigned_guest_id) ?? null
         : null;
       const key = guest?.id ?? "unassigned";
       const label = guest

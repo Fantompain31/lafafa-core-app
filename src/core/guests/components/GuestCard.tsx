@@ -13,10 +13,11 @@ type Props = {
   onRemoveCoOrganizer?: (guest: GuestSummary) => void
   isOrganizer?: boolean
   isOwner?: boolean
+  canManageRoles?: boolean
   memberRole?: MemberRole | null
 }
 
-export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, onMakeCoOrganizer, onRemoveCoOrganizer, isOrganizer, isOwner, memberRole }: Props) {
+export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRemove, onMakeCoOrganizer, onRemoveCoOrganizer, isOrganizer, isOwner, canManageRoles, memberRole }: Props) {
   const initials = [guest.first_name[0], guest.last_name?.[0]].filter(Boolean).join('').toUpperCase()
   const isLinked = guest.linked_user_id !== null
   const hasActiveInvitation = guest.active_invitation_id !== null || guest.active_link_id !== null
@@ -125,7 +126,7 @@ export function GuestCard({ guest, onClick, onInvite, onCopyLink, onRevoke, onRe
           </div>
         )}
 
-        {isOwner && guest.linked_user_id && !isGuestOwner && (
+        {canManageRoles && guest.linked_user_id && !isGuestOwner && (
           <div className="mt-3 flex flex-wrap gap-2 border-t border-neutral-100 pt-3" onClick={e => e.stopPropagation()}>
             {isGuestCoOrganizer ? (
               <button

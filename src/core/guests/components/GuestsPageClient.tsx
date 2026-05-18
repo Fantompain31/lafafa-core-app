@@ -30,6 +30,8 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
   const [memberRoles, setMemberRoles] = useState<Record<string, MemberRole>>({})
 
   const isOrganizer = permissions.canManageGuests(myRole)
+  const canCreateGuest = true
+  const canManageRoles = permissions.canManageMembers(myRole)
   const isOwner     = myRole === 'owner'
 
   async function loadMemberRoles() {
@@ -182,22 +184,24 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
           </p>
         </div>
 
-        {isOrganizer && (
-          <div className="flex gap-2">
+        <div className="flex gap-2">
+          {canCreateGuest && (
             <button
               onClick={() => setView('add')}
               className="rounded-lg border border-[var(--stay-primary)] px-3 py-2 text-sm font-medium text-[var(--stay-primary)] hover:opacity-90"
             >
               + Ajouter
             </button>
+          )}
+          {isOrganizer && (
             <button
               onClick={handleInviteGeneral}
               className="rounded-lg bg-[var(--stay-primary)] px-3 py-2 text-sm font-medium text-[var(--stay-primary-text)] hover:opacity-90"
             >
               Inviter
             </button>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       {/* Filtres */}
@@ -239,8 +243,9 @@ export function GuestsPageClient({ stayId, initialGuests, myRole, stayStartDate 
               onCopyLink={handleCopyLink}
               onRevoke={handleRevoke}
               onRemove={isOwner ? handleRemoveGuest : undefined}
-              onMakeCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, true) : undefined}
-              onRemoveCoOrganizer={isOwner ? (g) => void handleSetCoOrganizer(g, false) : undefined}
+              canManageRoles={canManageRoles}
+              onMakeCoOrganizer={canManageRoles ? (g) => void handleSetCoOrganizer(g, true) : undefined}
+              onRemoveCoOrganizer={canManageRoles ? (g) => void handleSetCoOrganizer(g, false) : undefined}
               memberRole={guest.linked_user_id ? memberRoles[guest.linked_user_id] ?? null : null}
               onClick={isOrganizer ? () => { setSelectedGuest(guest); setView('edit') } : undefined}
             />

@@ -147,6 +147,7 @@ export function StayHome({
   const [myResponsibilitiesError, setMyResponsibilitiesError] = useState<string | null>(null);
   const [myResponsibilitiesLoading, setMyResponsibilitiesLoading] = useState(false);
   const [responsibilitiesModalOpen, setResponsibilitiesModalOpen] = useState(false);
+  const [groupModalOpen, setGroupModalOpen] = useState(false);
   const confirmed = participants.filter((p) => p.status === "confirmed");
   const total = participants.length;
 
@@ -652,7 +653,18 @@ export function StayHome({
         </div>
 
         <div className="sh-sidebar">
-          <div className="sh-card">
+          <div
+            className="sh-card sh-clickable-card"
+            role="button"
+            tabIndex={0}
+            onClick={() => setGroupModalOpen(true)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setGroupModalOpen(true);
+              }
+            }}
+          >
             <div className="sh-card-header">
               <div>
                 <p className="sh-section-label">Le groupe</p>
@@ -665,13 +677,18 @@ export function StayHome({
                   sur {total} participant{total > 1 ? "s" : ""}
                 </p>
               </div>
-              {isOrganizer && (
+              {isOrganizer ? (
                 <button
                   className="sh-btn-outline"
-                  onClick={() => router.push(`/stays/${stay.id}/guests`)}
+                  onClick={(event) => {
+                    event.stopPropagation();
+                    router.push(`/stays/${stay.id}/guests`);
+                  }}
                 >
                   <IconPlus /> Inviter
                 </button>
+              ) : (
+                <span className="sh-card-arrow">→</span>
               )}
             </div>
 
@@ -724,6 +741,14 @@ export function StayHome({
             )}
           </div>
 
+          {groupModalOpen && (
+            <GroupMembersModal
+              participants={participants}
+              confirmedCount={confirmed.length}
+              onClose={() => setGroupModalOpen(false)}
+            />
+          )}
+
           {foodAlerts.length > 0 && (
             <FoodAlertsCard
               alerts={foodAlerts}
@@ -746,6 +771,46 @@ export function StayHome({
   );
 }
 
+function GroupMembersModal({
+  participants,
+  confirmedCount,
+  onClose,
+}: {
+  participants: GuestSummary[];
+  confirmedCount: number;
+  onClose: () => void;
+}) {
+  return (
+    <div className="sh-modal-overlay" onClick={onClose}>
+      <div className="sh-modal sh-group-modal" onClick={(event) => event.stopPropagation()}>
+        <div className="sh-modal-header">
+          <div>
+            <p className="sh-section-label">Le groupe</p>
+            <h2>{confirmedCount} confirmé{confirmedCount > 1 ? "s" : ""}</h2>
+          </div>
+          <button type="button" onClick={onClose} aria-label="Fermer">
+            ×
+          </button>
+        </div>
+        <div className="sh-modal-content">
+          <div className="sh-member-name-list">
+            {participants.map((participant) => (
+              <div key={participant.id} className="sh-member-name-row">
+                <span
+                  className="sh-member-name-dot"
+                  style={{ background: participant.color ?? "#C4A882" }}
+                >
+                  {participant.first_name[0]?.toUpperCase()}
+                </span>
+                <span>{participant.first_name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 type HomeResponsibilityRow = {
   id: string;
